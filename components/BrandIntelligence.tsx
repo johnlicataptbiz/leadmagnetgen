@@ -30,6 +30,7 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
   const [processingState, setProcessingState] = useState<{type: 'logo' | 'pdf' | null, progress: number}>({ type: null, progress: 0 });
   const [pdfName, setPdfName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPdfEngineLoading, setIsPdfEngineLoading] = useState(false);
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +39,6 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
   // Derived state: Is there any data?
   const hasData = context.referenceDocNames.length > 0 || context.logoUrl;
   const isProcessing = processingState.type !== null;
-  GlobalWorkerOptions.workerSrc = pdfWorker;
 
   const simulateProgress = () => {
     setProcessingState(prev => ({ ...prev, progress: 0 }));
@@ -112,20 +112,30 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
 
   const extractPdfText = async (file: File): Promise<string> => {
     try {
+      const needsInit = !pdfjsModulePromise;
+      if (needsInit) {
+        setIsPdfEngineLoading(true);
+      }
+      const { getDocument } = await loadPdfjs();
+      if (needsInit) {
+        setIsPdfEngineLoading(false);
+      }
       const data = await file.arrayBuffer();
       const pdf = await getDocument({ data }).promise;
-      const pageCount = Math.min(pdf.numPages, 10);
+      const pageCount = Math.min(pdf.numPages, 6);
       let text = '';
       for (let i = 1; i <= pageCount; i += 1) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         const pageText = content.items.map((item: any) => item.str).join(' ');
         text += `\n${pageText}`;
-        if (text.length > 30000) break;
+        if (text.length > 20000) break;
       }
-      if (text.trim().length > 0) return text;
+      const normalized = text.replace(/\s+/g, ' ').trim();
+      if (normalized.length > 0) return normalized;
     } catch (err) {
       console.warn('PDF text extraction failed, falling back to raw text', err);
+      setIsPdfEngineLoading(false);
     }
 
     return await new Promise((resolve, reject) => {
@@ -329,6 +339,12 @@ Be concise.`,
               >
                  {isProcessing && processingState.type === 'pdf' ? (
                     <div className="space-y-4">
+                      {isPdfEngineLoading && (
+                        <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                          <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                          Initializing PDF engine...
+                        </div>
+                      )}
                        <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
                           <div className="h-full bg-blue-600 transition-all duration-300 ease-out" style={{ width: `${processingState.progress}%` }}></div>
                        </div>
@@ -354,6 +370,9 @@ Be concise.`,
                      </div>
                  )}
               </div>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest text-center">
+                Best results with text-based PDFs under 5MB. Scanned images may be less accurate.
+              </p>
 
               {hasData && (
                 <div className="animate-fade-in pt-8 border-t border-slate-100">
