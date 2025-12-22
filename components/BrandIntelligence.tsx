@@ -107,10 +107,12 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
           }
 
           // Pick top 3 distinct colors (allowing white/black)
-          for (const [r, g, b] of palette) {
-             if (isDistinct(r, g, b) && uniqueColors.length < 3) {
-                uniqueColors.push(rgbToHex(r, g, b));
-             }
+          if (Array.isArray(palette)) {
+            for (const [r, g, b] of palette) {
+               if (isDistinct(r, g, b) && uniqueColors.length < 3) {
+                  uniqueColors.push(rgbToHex(r, g, b));
+               }
+            }
           }
           
           // Fill if less than 3
