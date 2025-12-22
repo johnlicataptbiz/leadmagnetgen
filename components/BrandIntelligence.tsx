@@ -128,8 +128,6 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
           setIsProcessing(false);
         };
         reader.readAsDataURL(file);
-      } else {
-        // PDF: Analyze with Gemini
       } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
         const analysis = await analyzePDF(file);
         onChange({
