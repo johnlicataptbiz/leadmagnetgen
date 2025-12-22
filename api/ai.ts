@@ -2,89 +2,62 @@
 import { GoogleGenerativeAI } from "@google/genai";
 
 export default async function handler(req: any, res: any) {
-  // CORS Headers
+  // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,GET,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Health check for debugging
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'Proxy Active', sdk_loaded: !!GoogleGenerativeAI });
   }
 
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { action, payload } = req.body;
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    console.error("Vercel Backend: GEMINI_API_KEY is not set.");
-    return res.status(500).json({ error: 'API Key missing on server configuration.' });
+    return res.status(500).json({ error: 'GEMINI_API_KEY missing on Vercel.' });
   }
 
   try {
-    // initialize the correct SDK class
     const genAI = new GoogleGenerativeAI(apiKey);
-    
-    const modelParams: any = { 
-      model: "gemini-2.0-flash"
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash",
+      systemInstruction: payload.systemInstruction || "You are a helpful assistant."
+    });
+
+    const generationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: payload.responseSchema
     };
-
-    // Only add system instruction if provided
-    if (payload.systemInstruction) {
-      modelParams.systemInstruction = payload.systemInstruction;
-    }
-
-    const model = genAI.getGenerativeModel(modelParams);
-
-    const generationConfig: any = {
-      responseMimeType: "application/json"
-    };
-
-    // Only add schema if provided
-    if (payload.responseSchema) {
-      generationConfig.responseSchema = payload.responseSchema;
-    }
 
     let result;
     if (action === 'multimodal') {
-      console.log("Processing multimodal request...");
       result = await model.generateContent({
         contents: [{ role: 'user', parts: payload.parts }],
         generationConfig
       });
     } else {
-      const promptText = payload.prompt || (payload.parts?.[0]?.text);
-      console.log("Processing text request...");
+      const prompt = payload.prompt || (payload.parts?.[0]?.text) || "Identify yourself.";
       result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig
       });
     }
 
     const response = await result.response;
-    const responseText = response.text();
-    
-    try {
-      return res.status(200).json(JSON.parse(responseText));
-    } catch (parseError) {
-      console.error("Failed to parse JSON response from AI:", responseText);
-      return res.status(500).json({ 
-        error: "AI did not return valid JSON.",
-        raw: responseText.substring(0, 100)
-      });
-    }
+    return res.status(200).json(JSON.parse(response.text()));
 
   } catch (error: any) {
-    console.error("Vercel Gemini Proxy Error:", error);
-    // ALWAYS return JSON so the frontend doesn't crash on a text error
+    console.error("AI Proxy Error:", error);
     return res.status(500).json({ 
-      error: error.message || "Internal server error during AI processing.",
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || "AI Engine Failure",
+      details: error.toString() 
     });
   }
 }
