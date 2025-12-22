@@ -24,6 +24,9 @@ const App: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [leadForm, setLeadForm] = useState({ name: '', email: '', practice: '', consent: false });
+  const [leadStatus, setLeadStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [leadMessage, setLeadMessage] = useState<string | null>(null);
 
   // Initialize Archive from LocalStorage
   const [archive, setArchive] = useState<ArchiveItem[]>(() => {
@@ -203,6 +206,9 @@ const App: React.FC = () => {
     setContent(null);
     setAnalysis(null);
     setErrorMessage(null);
+    setLeadForm({ name: '', email: '', practice: '', consent: false });
+    setLeadStatus('idle');
+    setLeadMessage(null);
   };
 
   const openArchiveItem = (item: ArchiveItem) => {
@@ -213,6 +219,36 @@ const App: React.FC = () => {
 
   const deleteFromArchive = (id: string) => {
     setArchive(prev => prev.filter(i => i.id !== id));
+  };
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (leadStatus === 'submitting') return;
+    setLeadStatus('submitting');
+    setLeadMessage(null);
+    try {
+      const response = await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: leadForm,
+          source: 'lead-magnet-preview',
+          topic,
+          contentTitle: content?.title,
+          createdAt: new Date().toISOString()
+        })
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to submit lead');
+      }
+      setLeadStatus('success');
+      setLeadMessage('Lead captured and sent to your webhook.');
+      setLeadForm({ name: '', email: '', practice: '', consent: false });
+    } catch (err: any) {
+      setLeadStatus('error');
+      setLeadMessage(err.message || 'Failed to submit lead.');
+    }
   };
 
   return (
@@ -360,6 +396,74 @@ const App: React.FC = () => {
                     >
                       {isExporting ? 'Exporting...' : 'Download Branded PDF'}
                     </button>
+                  </div>
+                </div>
+                <div className="mb-8 no-print">
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-black heading-font uppercase text-slate-900">Lead Capture</h3>
+                      {leadStatus === 'success' && (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Submitted</span>
+                      )}
+                    </div>
+                    <form onSubmit={handleLeadSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        type="text"
+                        name="name"
+                        placeholder="Full name"
+                        value={leadForm.name}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                        required
+                      />
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="Email address"
+                        value={leadForm.email}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                        required
+                      />
+                      <input
+                        type="text"
+                        name="practice"
+                        placeholder="Practice name (optional)"
+                        value={leadForm.practice}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, practice: e.target.value }))}
+                        className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm md:col-span-2"
+                      />
+                      <label className="md:col-span-2 flex items-start gap-3 text-xs text-slate-500">
+                        <input
+                          type="checkbox"
+                          checked={leadForm.consent}
+                          onChange={(e) => setLeadForm(prev => ({ ...prev, consent: e.target.checked }))}
+                          className="mt-1"
+                          required
+                        />
+                        <span>
+                          I consent to having my info sent to the practice CRM for follow‑up. We never sell or share data.
+                        </span>
+                      </label>
+                      <div className="md:col-span-2 flex items-center justify-between gap-4">
+                        <p className="text-[10px] uppercase tracking-widest text-slate-400">
+                          By submitting, you agree to our privacy policy and data handling.
+                        </p>
+                        <button
+                          type="submit"
+                          disabled={leadStatus === 'submitting'}
+                          className="px-6 py-2 text-white font-black uppercase text-xs rounded-lg shadow-lg disabled:opacity-60"
+                          style={{ backgroundColor: brandContext.colors.secondary }}
+                        >
+                          {leadStatus === 'submitting' ? 'Submitting...' : 'Send to CRM'}
+                        </button>
+                      </div>
+                    </form>
+                    {leadMessage && (
+                      <p className={`mt-4 text-sm ${leadStatus === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+                        {leadMessage}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <LeadMagnetPreview content={content} brandContext={brandContext} />

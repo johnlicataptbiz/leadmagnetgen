@@ -16,5 +16,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/1C2YXzy9dVStuwyTyJJKQTV
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. (Optional) Set `LEAD_WEBHOOK_URL` in [.env.local](.env.local) to receive lead capture submissions
 3. Run the app:
    `npm run dev`
