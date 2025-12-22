@@ -155,7 +155,10 @@ export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitle
 };
 
 export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandContext?: BrandContext): Promise<LeadMagnetContent | null> => {
-  const fullPrompt = `${CONTENT_PROMPT(idea)}`;
+  const brandPrompt = brandContext
+    ? `Brand Context:\nTone: ${brandContext.tonality}\nStyle: ${brandContext.styling}\nNotes: ${brandContext.styleNotes}`
+    : "";
+  const fullPrompt = `${CONTENT_PROMPT(idea)}\n\n${brandPrompt}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
@@ -196,7 +199,10 @@ export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandConte
 };
 
 export const analyzeHubspotData = async (rawContent: string, brandContext?: BrandContext): Promise<HubspotAnalysis | null> => {
-  const prompt = `Analyze HubSpot Data: ${rawContent}`;
+  const brandPrompt = brandContext
+    ? `Brand Context:\nTone: ${brandContext.tonality}\nStyle: ${brandContext.styling}\nNotes: ${brandContext.styleNotes}`
+    : "";
+  const prompt = `Analyze HubSpot Data: ${rawContent}\n\n${brandPrompt}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,

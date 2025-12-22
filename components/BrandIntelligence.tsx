@@ -177,6 +177,11 @@ Be concise.`,
     return await response.json();
   };
 
+  const addReferenceDoc = (label: string, nextContext: BrandContext) => {
+    const next = Array.from(new Set([...nextContext.referenceDocNames, label]));
+    onChange({ ...nextContext, referenceDocNames: next });
+  };
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -196,12 +201,12 @@ Be concise.`,
               setProcessingState({ type: 'logo', progress: 100 });
               
               setTimeout(() => {
-                  onChange({
+                  const nextContext = {
                      ...context,
                      logoUrl,
-                     colors,
-                     referenceDocNames: [...context.referenceDocNames, `Logo: ${file.name}`]
-                  });
+                     colors
+                  };
+                  addReferenceDoc(`Logo: ${file.name}`, nextContext);
                   setProcessingState({ type: null, progress: 0 });
               }, 500);
             };
@@ -224,13 +229,13 @@ Be concise.`,
             setPdfName(file.name);
 
             setTimeout(() => {
-                onChange({
+                const nextContext = {
                   ...context,
                   tonality: analysis.tonality,
                   styling: analysis.styling,
-                  styleNotes: analysis.styleNotes,
-                  referenceDocNames: [...context.referenceDocNames, `Lead Magnet: ${file.name}`]
-                });
+                  styleNotes: analysis.styleNotes
+                };
+                addReferenceDoc(`Lead Magnet: ${file.name}`, nextContext);
                 setProcessingState({ type: null, progress: 0 });
             }, 500);
         } catch (err) {

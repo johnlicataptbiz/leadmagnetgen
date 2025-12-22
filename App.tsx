@@ -207,6 +207,7 @@ const App: React.FC = () => {
 
   const openArchiveItem = (item: ArchiveItem) => {
     setContent(item.content);
+    setBrandContext(item.brandContext);
     setStep('preview');
   };
 

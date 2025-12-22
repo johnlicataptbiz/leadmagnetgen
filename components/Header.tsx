@@ -48,6 +48,12 @@ const Header: React.FC<HeaderProps> = ({
             Creator
           </button>
           <button 
+            onClick={onInsightsClick}
+            className={`text-xs font-black uppercase tracking-widest transition ${currentStep === 'insights' ? 'text-blue-400' : 'hover:text-blue-400 text-slate-300'}`}
+          >
+            Insights
+          </button>
+          <button 
             onClick={onMemoryBankClick}
             className={`text-xs font-black uppercase tracking-widest transition ${currentStep === 'archive' ? 'text-blue-400' : 'hover:text-blue-400 text-slate-300'}`}
           >

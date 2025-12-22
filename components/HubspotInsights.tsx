@@ -5,12 +5,11 @@ import { analyzeHubspotData } from '../services/geminiService';
 
 interface HubspotInsightsProps {
   brandContext?: BrandContext;
-  apiKey?: string;
   onAnalysisComplete: (analysis: HubspotAnalysis) => void;
   onSelectIdea: (idea: LeadMagnetIdea) => void;
 }
 
-const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey, onAnalysisComplete, onSelectIdea }) => {
+const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, onAnalysisComplete, onSelectIdea }) => {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -27,7 +26,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey,
 
     try {
       const text = await file.text();
-      const result = await analyzeHubspotData(text.substring(0, 50000), brandContext, apiKey);
+      const result = await analyzeHubspotData(text.substring(0, 50000), brandContext);
       if (result) {
         setAnalysis(result);
         onAnalysisComplete(result);
