@@ -14,15 +14,28 @@ interface UploadedFilePreview {
   name: string;
   rowCount: number;
   headers: string[];
-  sampleCsv: string; // First N lines
+  sampleCsv: string; 
   numericStats?: Record<string, { sum: number; max: number; min: number }>;
+  status: 'pending' | 'processing' | 'complete' | 'error';
 }
 
 const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report, onReportChange }) => {
   const [uploads, setUploads] = useState<UploadedFilePreview[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState("Correlating Data...");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const LOADING_MESSAGES = [
+    "Reading Hubspot data structures...",
+    "Correlating campaigns across files...",
+    "Analyzing form submission trends...",
+    "Identifying market anomalies...",
+    "Extracting strategic KPIs...",
+    "Building data visualizations...",
+    "Finalizing analyst memo...",
+    "Polishing dashboard..."
+  ];
 
   // Helper to parse CSV/text
   const processFile = async (file: File): Promise<UploadedFilePreview> => {
@@ -72,14 +85,15 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
            });
         }
 
-        resolve({
-          id: crypto.randomUUID(),
-          name: file.name,
-          rowCount,
-          headers,
-          sampleCsv,
-          numericStats
-        });
+          resolve({
+            id: crypto.randomUUID(),
+            name: file.name,
+            rowCount,
+            headers,
+            sampleCsv,
+            numericStats,
+            status: 'complete'
+          });
       };
       reader.onerror = () => reject('Read error');
       reader.readAsText(file);
@@ -89,23 +103,39 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
   const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setErrorMessage(null);
-    const newFiles: UploadedFilePreview[] = [];
     
-    // Cap at 10 files
-    const limit = 10 - uploads.length;
-    const filesToProcess = Array.from(e.target.files).slice(0, limit);
+    const selectedFiles = Array.from(e.target.files).slice(0, 10 - uploads.length) as File[];
+    
+    // 1. Add them all as pending first
+    const pendingFiles: UploadedFilePreview[] = selectedFiles.map(f => ({
+      id: crypto.randomUUID(),
+      name: f.name,
+      rowCount: 0,
+      headers: [],
+      sampleCsv: '',
+      status: 'pending'
+    }));
+    
+    setUploads(prev => [...prev, ...pendingFiles]);
 
-    for (const file of filesToProcess) {
+    // 2. Process them one by one
+    for (const pFile of pendingFiles) {
+       // Find the real browser file object
+       const realFile = selectedFiles.find(f => (f as File).name === pFile.name);
+       if (!realFile) continue;
+
+       // Set to processing
+       setUploads(prev => prev.map(u => u.id === pFile.id ? { ...u, status: 'processing' } : u));
+
        try {
-         const p = await processFile(file as File);
-         newFiles.push(p);
+         const processed = await processFile(realFile as File);
+         setUploads(prev => prev.map(u => u.id === pFile.id ? { ...processed, id: pFile.id } : u));
        } catch (err) {
-         console.error('File skip:', (file as File).name, err);
+         console.error('File skip:', pFile.name, err);
+         setUploads(prev => prev.map(u => u.id === pFile.id ? { ...u, status: 'error' } : u));
        }
     }
     
-    setUploads(prev => [...prev, ...newFiles]);
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -115,11 +145,19 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
 
   const handleGenerate = async () => {
     if (uploads.length === 0) return;
+    if (uploads.some(u => u.status !== 'complete')) return;
+
     setIsProcessing(true);
     setErrorMessage(null);
     
+    // Logic to cycle messages
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % LOADING_MESSAGES.length;
+      setProcessingMessage(LOADING_MESSAGES[msgIdx]);
+    }, 2500);
+
     try {
-      // Massage data for service
       const payload = uploads.map(u => ({
         name: u.name,
         headers: u.headers,
@@ -131,13 +169,14 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
       const result = await generateSmartMarketReport(payload, brandContext);
       if (result) {
         onReportChange(result);
-        setUploads([]); // clear staging on success
+        setUploads([]); 
       }
     } catch (err: any) {
        console.error(err);
        setErrorMessage(err.message || "Failed to generate analyst report.");
     } finally {
        setIsProcessing(false);
+       clearInterval(msgInterval);
     }
   };
 
@@ -309,14 +348,32 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
          {uploads.length > 0 && (
             <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                {uploads.map(file => (
-                  <div key={file.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between group">
+                  <div key={file.id} className={`bg-white border rounded-2xl flex items-center justify-between group p-4 transition-all ${
+                    file.status === 'complete' ? 'border-green-100 shadow-sm' : 
+                    file.status === 'processing' ? 'border-blue-200 animate-pulse bg-blue-50/30' : 
+                    'border-slate-200'
+                  }`}>
                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-slate-100 text-slate-400 font-bold text-xs shadow-sm">
-                           CSV
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs shadow-sm border transition-colors ${
+                          file.status === 'complete' ? 'bg-green-50 border-green-100 text-green-600' : 
+                          file.status === 'processing' ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                          'bg-slate-50 border-slate-100 text-slate-400'
+                        }`}>
+                           {file.status === 'complete' ? (
+                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                           ) : file.status === 'processing' ? (
+                             <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+                           ) : 'CSV'}
                         </div>
                         <div className="min-w-0">
-                           <p className="font-bold text-sm text-slate-800 truncate">{file.name}</p>
-                           <p className="text-xs text-slate-400 uppercase tracking-wider font-bold">{file.rowCount} rows</p>
+                           <p className={`font-bold text-sm truncate ${file.status === 'complete' ? 'text-slate-800' : 'text-slate-500'}`}>{file.name}</p>
+                           {file.status === 'complete' ? (
+                              <p className="text-[10px] text-green-600 uppercase tracking-wider font-extrabold flex items-center gap-1">
+                                Ready: {file.rowCount} rows
+                              </p>
+                           ) : (
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">{file.status}...</p>
+                           )}
                         </div>
                      </div>
                      <button 
@@ -324,7 +381,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                         className="text-slate-300 hover:text-red-500 p-2 transition-colors"
                         title="Remove file"
                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                      </button>
                   </div>
                ))}
@@ -371,17 +428,17 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                      disabled={isProcessing}
                      className="w-full py-4 bg-slate-900 hover:bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-sm shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                   >
-                     {isProcessing ? (
+                      {isProcessing ? (
                         <>
                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                           Correlating Data across {uploads.length} files...
+                           {processingMessage}
                         </>
-                     ) : (
+                      ) : (
                         <>
                            Generate Unified Analyst Report
                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </>
-                     )}
+                      )}
                   </button>
                   <button 
                     onClick={() => setUploads([])}
