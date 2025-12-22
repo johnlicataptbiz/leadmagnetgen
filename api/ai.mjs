@@ -21,9 +21,9 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Select model based on 2025 Gemini 3 Specifications
-    // Identifiers: gemini-3-pro, gemini-3-flash
-    const modelName = action === 'image' ? 'gemini-3-pro' : 'gemini-3-flash';
+    // Select model based on production-stable Gemini 1.5
+    // Gemini 1.5 Flash is the current reliable standard for this implementation
+    const modelName = action === 'image' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
     const requestBody = {
@@ -33,8 +33,7 @@ export default async function handler(req, res) {
       generationConfig: {
         response_mime_type: action === 'image' ? "text/plain" : "application/json",
         response_schema: action === 'image' ? undefined : payload.responseSchema,
-        thinking_level: payload.precision === 'high' ? 'high' : 'low',
-        temperature: 1.0, // Optimized for Gemini 3
+        // Reverting to standard generation config for immediate stability
       }
     };
 
