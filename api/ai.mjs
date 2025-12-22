@@ -1,20 +1,12 @@
-import { GoogleGenerativeAI } from "@google/genai";
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  // STEP 1: Verify function entry
+  
   if (req.method === 'GET') {
-    return res.status(200).json({ 
-      status: 'Function Reached',
-      node_version: process.version,
-      env_key_exists: !!process.env.GEMINI_API_KEY,
-      sdk_loaded: !!GoogleGenerativeAI
-    });
+    return res.status(200).json({ status: 'Lightweight Proxy Online', version: '2.0' });
   }
 
   if (req.method !== 'POST') {
@@ -22,66 +14,74 @@ export default async function handler(req, res) {
   }
 
   try {
-    if (!GoogleGenerativeAI) {
-      return res.status(500).json({ error: 'SDK import failed: GoogleGenerativeAI is undefined' });
-    }
-
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not set on server' });
+      return res.status(500).json({ error: 'API key not configured' });
     }
 
-    // STEP 2: Test SDK initialization
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    if (!genAI) {
-      return res.status(500).json({ error: 'SDK initialization failed' });
-    }
-
-    // STEP 3: Process request
     const { action, payload } = req.body;
     
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash",
-      systemInstruction: payload?.systemInstruction || "You are a helpful assistant"
-    });
-
-    const generationConfig = {
-      responseMimeType: "application/json",
-      responseSchema: payload?.responseSchema || { type: "object", properties: { message: { type: "string" } } }
+    // Construct Gemini API request
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+    
+    const requestBody = {
+      contents: action === 'multimodal' 
+        ? [{ role: 'user', parts: payload.parts }]
+        : [{ role: 'user', parts: [{ text: payload.prompt }] }],
+      generationConfig: {
+        response_mime_type: "application/json",
+        response_schema: payload.responseSchema
+      }
     };
 
-    let result;
-    if (action === 'multimodal') {
-      result = await model.generateContent({
-        contents: [{ role: 'user', parts: payload.parts }],
-        generationConfig
-      });
-    } else {
-      const promptText = payload?.prompt || payload?.parts?.[0]?.text || "Hello";
-      result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
-        generationConfig
+    // Add system instruction if provided
+    if (payload.systemInstruction) {
+      requestBody.systemInstruction = {
+        parts: [{ text: payload.systemInstruction }]
+      };
+    }
+
+    // Forward request to Gemini API
+    const geminiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      return res.status(geminiResponse.status).json({ 
+        error: 'Gemini API error',
+        status: geminiResponse.status,
+        details: errorText.substring(0, 500)
       });
     }
 
-    const response = await result.response;
-    const text = response.text();
-    
+    const geminiData = await geminiResponse.json();
+    const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!generatedText) {
+      return res.status(500).json({ 
+        error: 'No content generated',
+        candidates: geminiData.candidates
+      });
+    }
+
+    // Parse and return the JSON response
     try {
-      return res.status(200).json(JSON.parse(text));
+      return res.status(200).json(JSON.parse(generatedText));
     } catch (parseError) {
       return res.status(500).json({ 
-        error: 'AI did not return valid JSON',
-        raw: text.substring(0, 200)
+        error: 'Failed to parse AI response as JSON',
+        raw: generatedText.substring(0, 200)
       });
     }
 
   } catch (error) {
     return res.status(500).json({ 
-      error: error.message || 'Unknown error',
-      stack: error.stack,
-      type: error.constructor?.name
+      error: error.message,
+      type: error.name,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
