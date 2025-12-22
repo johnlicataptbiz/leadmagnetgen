@@ -37,7 +37,10 @@ const SuggestionList: React.FC<SuggestionListProps> = ({ suggestions, onSelect, 
           >
             {isRefreshing && (
               <div className="absolute inset-0 bg-white/40 z-10 flex items-center justify-center backdrop-blur-sm">
-                <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${secondary} transparent transparent transparent` }}></div>
+                <div 
+                  className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" 
+                  style={{ borderTopColor: secondary }}
+                ></div>
               </div>
             )}
 

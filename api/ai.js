@@ -1,18 +1,17 @@
 
-import { GoogleGenerativeAI } from "@google/genai";
+const { GoogleGenerativeAI } = require("@google/genai");
 
-export default async function handler(req: any, res: any) {
+module.exports = async (req, res) => {
   // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Health check for debugging
   if (req.method === 'GET') {
-    return res.status(200).json({ status: 'Proxy Active', sdk_loaded: !!GoogleGenerativeAI });
+    return res.status(200).json({ status: 'Proxy Online', driver: 'CJS' });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -21,14 +20,14 @@ export default async function handler(req: any, res: any) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY missing on Vercel.' });
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on Vercel.' });
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash",
-      systemInstruction: payload.systemInstruction || "You are a helpful assistant."
+      systemInstruction: payload.systemInstruction || "You are PT Biz AI assistant."
     });
 
     const generationConfig = {
@@ -53,11 +52,11 @@ export default async function handler(req: any, res: any) {
     const response = await result.response;
     return res.status(200).json(JSON.parse(response.text()));
 
-  } catch (error: any) {
-    console.error("AI Proxy Error:", error);
+  } catch (error) {
+    console.error("Gemini Error:", error);
     return res.status(500).json({ 
-      error: error.message || "AI Engine Failure",
-      details: error.toString() 
+      error: error.message || "AI processing failed.",
+      trace: error.toString()
     });
   }
-}
+};

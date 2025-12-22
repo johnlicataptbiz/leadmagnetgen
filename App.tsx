@@ -198,7 +198,10 @@ const App: React.FC = () => {
           <div className="bg-white/40 rounded-[2.8rem] backdrop-blur-sm p-4 md:p-12 min-h-[70vh]">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-            <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${brandContext.colors.secondary} transparent transparent transparent` }}></div>
+            <div 
+              className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin" 
+              style={{ borderTopColor: brandContext.colors.secondary }}
+            ></div>
             <div className="text-center">
               <h2 className="text-2xl font-bold text-slate-900 heading-font">{loadingMessage}</h2>
               <p className="text-slate-500 mt-2">Leveraging Brand Context & Gemini 2.0 Flash...</p>

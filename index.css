@@ -132,3 +132,42 @@
     display: none !important;
   }
 }
+/* Lead Magnet Preview Custom Utilities */
+.preview-container {
+  max-width: 850px;
+  font-family: 'Inter', sans-serif;
+}
+
+.cover-page {
+  min-height: 1050px;
+}
+
+.cover-accent-circles {
+  width: 600px;
+  height: 600px;
+}
+
+.grid-overlay {
+  background-image: radial-gradient(circle, white 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.implementation-module {
+  border-radius: 40px;
+}
+
+.strategic-pivot-box {
+  border-radius: 40px;
+}
+
+.case-study-box {
+  border-radius: 50px;
+}
+
+.cta-section {
+  border-radius: 60px;
+}
+
+.letter-mark {
+  border-bottom-width: 4px;
+}

@@ -11,25 +11,25 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
   const { colors, logoUrl } = brandContext;
 
   return (
-    <div className="bg-white shadow-2xl mx-auto rounded-3xl overflow-hidden max-w-[850px] border border-slate-200 selection:bg-blue-100 selection:text-blue-900" id="preview-doc" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="bg-white shadow-2xl mx-auto rounded-3xl overflow-hidden preview-container border border-slate-200 selection:bg-blue-100 selection:text-blue-900" id="preview-doc">
       
       {/* Cover Page */}
       <div 
-        className="min-h-[1050px] relative flex flex-col justify-center items-center text-center px-16 py-24 overflow-hidden"
+        className="cover-page relative flex flex-col justify-center items-center text-center px-16 py-24 overflow-hidden"
         style={{ backgroundColor: colors.primary }}
       >
         {/* Modern Shimmer & Glow */}
         <div className="shimmer-active absolute inset-0 opacity-10 pointer-events-none"></div>
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full blur-[180px] opacity-30 animate-pulse" style={{ backgroundColor: colors.secondary }}></div>
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full blur-[180px] opacity-20" style={{ backgroundColor: colors.accent }}></div>
-        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
+        <div className="absolute top-1/4 left-1/4 cover-accent-circles rounded-full blur-[180px] opacity-30 animate-pulse" style={{ backgroundColor: colors.secondary }}></div>
+        <div className="absolute bottom-1/4 right-1/4 cover-accent-circles rounded-full blur-[180px] opacity-20" style={{ backgroundColor: colors.accent }}></div>
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none grid-overlay"></div>
         
         {/* Header / Logo */}
         <div className="mb-24 z-10">
           {logoUrl ? (
             <img src={logoUrl} className="h-32 object-contain" alt="Brand Logo" />
           ) : (
-            <div className="inline-block pb-4 px-2 border-b-4" style={{ borderBottomColor: colors.secondary }}>
+            <div className="inline-block pb-4 px-2 letter-mark" style={{ borderBottomColor: colors.secondary }}>
                <span className="text-7xl font-black italic tracking-tighter heading-font text-white">
                 PT<span style={{ color: colors.secondary }}>BIZ</span>
               </span>
@@ -130,7 +130,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
             )}
 
             {section.type === 'worksheet' && (
-              <div className="bg-white border-2 border-slate-100 p-12 rounded-[40px] shadow-2xl relative overflow-hidden">
+              <div className="bg-white border-2 border-slate-100 p-12 implementation-module shadow-2xl relative overflow-hidden">
                  <div className="absolute top-0 left-0 w-full h-3" style={{ backgroundColor: colors.secondary }}></div>
                  <div className="flex justify-between items-center mb-10">
                     <h4 className="font-black uppercase text-xs tracking-[0.3em] heading-font" style={{ color: colors.secondary }}>Implementation Module</h4>
@@ -150,7 +150,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
 
             {section.type === 'box' && (
               <div 
-                className="text-white p-14 rounded-[40px] shadow-2xl relative overflow-hidden group/box"
+                className="text-white p-14 strategic-pivot-box shadow-2xl relative overflow-hidden group/box"
                 style={{ backgroundColor: colors.primary }}
               >
                 <div className="absolute top-0 right-0 w-48 h-48 opacity-10 transform translate-x-12 -translate-y-12 rotate-45" style={{ backgroundColor: colors.accent }}></div>
@@ -198,7 +198,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
 
             {section.type === 'case_study' && (
               <div 
-                className="p-14 rounded-[50px] border-2 relative overflow-hidden shadow-xl"
+                className="p-14 case-study-box border-2 relative overflow-hidden shadow-xl"
                 style={{ backgroundColor: `${colors.secondary}05`, borderColor: `${colors.secondary}15` }}
               >
                 <div className="absolute top-[-40px] left-[-40px] w-64 h-64 opacity-5" style={{ backgroundColor: colors.secondary, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 70%' }}></div>
@@ -233,7 +233,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
 
         {/* CTA Section - The Hard Offer */}
         <section 
-          className="rounded-[60px] p-20 text-center text-white space-y-12 no-break-inside shadow-3xl relative overflow-hidden"
+          className="cta-section p-20 text-center text-white space-y-12 no-break-inside shadow-3xl relative overflow-hidden"
           style={{ backgroundColor: colors.secondary }}
         >
           {/* Subtle Accent Circles */}
