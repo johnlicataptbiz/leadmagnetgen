@@ -29,29 +29,35 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
           const rgbToHex = (r: number, g: number, b: number) => 
             "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
           
-          // Filter out near-white and near-black colors
-          const filteredPalette = palette.filter(([r, g, b]) => {
+          // Separate vibrant colors from near-white/black
+          const vibrantColors: number[][] = [];
+          const neutralColors: number[][] = [];
+          
+          palette.forEach(([r, g, b]) => {
             const brightness = (r + g + b) / 3;
             const isNearWhite = brightness > 240;
             const isNearBlack = brightness < 15;
-            return !isNearWhite && !isNearBlack;
+            
+            if (isNearWhite || isNearBlack) {
+              neutralColors.push([r, g, b]);
+            } else {
+              vibrantColors.push([r, g, b]);
+            }
           });
 
-          // If we have enough filtered colors, use them
-          if (filteredPalette.length >= 3) {
-            resolve({
-              primary: rgbToHex(filteredPalette[0][0], filteredPalette[0][1], filteredPalette[0][2]),
-              secondary: rgbToHex(filteredPalette[1][0], filteredPalette[1][1], filteredPalette[1][2]),
-              accent: rgbToHex(filteredPalette[2][0], filteredPalette[2][1], filteredPalette[2][2]),
-            });
-          } else {
-            // Fallback to original palette if filtering removed too many
-            resolve({
-              primary: rgbToHex(palette[0][0], palette[0][1], palette[0][2]),
-              secondary: rgbToHex(palette[1][0], palette[1][1], palette[1][2]),
-              accent: rgbToHex(palette[2][0], palette[2][1], palette[2][2]),
-            });
+          // Prioritize vibrant colors, but use neutrals if we don't have enough
+          const finalPalette = [...vibrantColors, ...neutralColors].slice(0, 3);
+          
+          // Ensure we have at least 3 colors
+          while (finalPalette.length < 3) {
+            finalPalette.push(palette[finalPalette.length] || [128, 128, 128]);
           }
+
+          resolve({
+            primary: rgbToHex(finalPalette[0][0], finalPalette[0][1], finalPalette[0][2]),
+            secondary: rgbToHex(finalPalette[1][0], finalPalette[1][1], finalPalette[1][2]),
+            accent: rgbToHex(finalPalette[2][0], finalPalette[2][1], finalPalette[2][2]),
+          });
         } catch (err) {
           console.error('Color extraction failed:', err);
           resolve(context.colors);
