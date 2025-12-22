@@ -32,9 +32,16 @@ const callAIProxy = async (action: 'text' | 'multimodal', payload: any) => {
   });
   
   if (!response.ok) {
-    const err = await response.json();
-    console.error("AI Proxy Error:", err);
-    throw new Error(err.error || "Server failed to process AI request");
+    let errorMsg = "Server failed to process AI request";
+    try {
+      const err = await response.json();
+      errorMsg = err.error || errorMsg;
+      if (response.status === 504) errorMsg = "The analysis timed out. Your data might be too complex for a single pass—try uploading fewer files.";
+    } catch (e) {
+      if (response.status === 504) errorMsg = "The analysis timed out. Try uploading fewer files.";
+    }
+    console.error("AI Proxy Error:", errorMsg);
+    throw new Error(errorMsg);
   }
   
   return response.json();
@@ -281,11 +288,11 @@ Your job: produce ONE unified "Smart Market Report" that cross-references all re
 Rules:
 - Infer what each report represents from column names (pages/campaigns/forms/sources/etc).
 - Cross-reference reports when possible (e.g., same URL/title/campaign appearing in multiple exports).
-- EXTRACT AT LEAST 12 DISTINCT KPIs. Look for totals, averages, conversion rates, top performer stats, drop-off rates, and negative outliers.
+- EXTRACT AT LEAST 10 DISTINCT KPIs. Look for totals, averages, conversion rates, top performer stats, drop-off rates, and negative outliers.
 - Prefer actionable insights for marketing decisions.
 - If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step (e.g., "Check 'Lifecycle Stage' property in HubSpot").
 - ALWAYS include a "Cautions" array with at least 2 items.
-- ALWAYS include at least 2 charts. Use the numeric stats provided to create comparisons (e.g., Row Count per file, or specific column sums if available).
+- ALWAYS include at least 1-2 charts. Use the numeric stats provided to create comparisons (e.g., Row Count per file, or specific column sums if available).
 - Output charts with small, readable datasets (top 5–10 items, or 30-day trend points).
 
 DATA (each report includes headers + a CSV sample):

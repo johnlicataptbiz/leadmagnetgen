@@ -50,7 +50,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
 
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
         const rowCount = lines.length - 1;
-        const sampleLimit = Math.min(lines.length, 50); // increased sample size for better AI context
+        const sampleLimit = Math.min(lines.length, 20); // reduced sample size to avoid AI timeouts
         const sampleCsv = lines.slice(0, sampleLimit).join('\n');
 
         // Basic numeric stats for heuristic context
@@ -58,10 +58,12 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
         
         // Only compute stats if file isn't huge to match performance constraints
         if (rowCount < 5000) {
+           // Pre-split data rows once to save O(N^2) work
+           const dataRows = lines.slice(1).map(line => line.split(','));
+
            headers.forEach((h, idx) => {
              // Simple heuristic: check first 10 rows to see if numeric
-             const isNumericCol = lines.slice(1, 11).every(line => {
-                const parts = line.split(','); // naive split
+             const isNumericCol = dataRows.slice(0, 10).every(parts => {
                 const val = parseFloat(parts[idx]);
                 return !isNaN(val);
              });
@@ -71,9 +73,9 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                 let max = -Infinity;
                 let min = Infinity;
                 
-                // Scan full dataset for stats
-                for (let i = 1; i < lines.length; i++) {
-                   const val = parseFloat(lines[i].split(',')[idx]);
+                // Scan pre-split rows for stats
+                for (const parts of dataRows) {
+                   const val = parseFloat(parts[idx]);
                    if (!isNaN(val)) {
                       sum += val;
                       if (val > max) max = val;
