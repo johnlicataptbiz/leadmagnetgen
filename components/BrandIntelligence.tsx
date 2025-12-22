@@ -24,15 +24,34 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
       img.onload = () => {
         try {
           const colorThief = new ColorThief();
-          const palette = colorThief.getPalette(img, 3);
+          // Get more colors to filter from
+          const palette = colorThief.getPalette(img, 8);
           const rgbToHex = (r: number, g: number, b: number) => 
             "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
           
-          resolve({
-            primary: rgbToHex(palette[0][0], palette[0][1], palette[0][2]),
-            secondary: rgbToHex(palette[1][0], palette[1][1], palette[1][2]),
-            accent: rgbToHex(palette[2][0], palette[2][1], palette[2][2]),
+          // Filter out near-white and near-black colors
+          const filteredPalette = palette.filter(([r, g, b]) => {
+            const brightness = (r + g + b) / 3;
+            const isNearWhite = brightness > 240;
+            const isNearBlack = brightness < 15;
+            return !isNearWhite && !isNearBlack;
           });
+
+          // If we have enough filtered colors, use them
+          if (filteredPalette.length >= 3) {
+            resolve({
+              primary: rgbToHex(filteredPalette[0][0], filteredPalette[0][1], filteredPalette[0][2]),
+              secondary: rgbToHex(filteredPalette[1][0], filteredPalette[1][1], filteredPalette[1][2]),
+              accent: rgbToHex(filteredPalette[2][0], filteredPalette[2][1], filteredPalette[2][2]),
+            });
+          } else {
+            // Fallback to original palette if filtering removed too many
+            resolve({
+              primary: rgbToHex(palette[0][0], palette[0][1], palette[0][2]),
+              secondary: rgbToHex(palette[1][0], palette[1][1], palette[1][2]),
+              accent: rgbToHex(palette[2][0], palette[2][1], palette[2][2]),
+            });
+          }
         } catch (err) {
           console.error('Color extraction failed:', err);
           resolve(context.colors);
