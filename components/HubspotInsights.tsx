@@ -5,11 +5,12 @@ import { analyzeHubspotData } from '../services/geminiService';
 
 interface HubspotInsightsProps {
   brandContext?: BrandContext;
+  apiKey?: string;
   onAnalysisComplete: (analysis: HubspotAnalysis) => void;
   onSelectIdea: (idea: LeadMagnetIdea) => void;
 }
 
-const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, onAnalysisComplete, onSelectIdea }) => {
+const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey, onAnalysisComplete, onSelectIdea }) => {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -24,14 +25,14 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, onAnaly
 
     try {
       const text = await file.text();
-      const result = await analyzeHubspotData(text.substring(0, 50000), brandContext);
+      const result = await analyzeHubspotData(text.substring(0, 50000), brandContext, apiKey);
       if (result) {
         setAnalysis(result);
         onAnalysisComplete(result);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Error parsing or analyzing file.");
+      alert(`Error parsing or analyzing file: ${e.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

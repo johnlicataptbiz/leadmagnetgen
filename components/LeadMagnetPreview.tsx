@@ -11,17 +11,18 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
   const { colors, logoUrl } = brandContext;
 
   return (
-    <div className="bg-white shadow-2xl mx-auto rounded-xl overflow-hidden max-w-[850px] border border-slate-200" id="preview-doc" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="bg-white shadow-2xl mx-auto rounded-3xl overflow-hidden max-w-[850px] border border-slate-200 selection:bg-blue-100 selection:text-blue-900" id="preview-doc" style={{ fontFamily: "'Inter', sans-serif" }}>
       
       {/* Cover Page */}
       <div 
         className="min-h-[1050px] relative flex flex-col justify-center items-center text-center px-16 py-24 overflow-hidden"
         style={{ backgroundColor: colors.primary }}
       >
-        {/* Abstract Background Shapes */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-20 -mr-64 -mt-64" style={{ backgroundColor: colors.secondary }}></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15 -ml-64 -mb-64" style={{ backgroundColor: colors.accent }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+        {/* Modern Shimmer & Glow */}
+        <div className="shimmer-active absolute inset-0 opacity-10 pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full blur-[180px] opacity-30 animate-pulse" style={{ backgroundColor: colors.secondary }}></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full blur-[180px] opacity-20" style={{ backgroundColor: colors.accent }}></div>
+        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '60px 60px' }}></div>
         
         {/* Header / Logo */}
         <div className="mb-24 z-10">

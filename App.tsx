@@ -43,18 +43,18 @@ const App: React.FC = () => {
     return {
       logoUrl: undefined,
       colors: {
-        primary: '#101828',
-        secondary: '#2563EB',
-        accent: '#3B82F6'
+        primary: '#64748B',
+        secondary: '#94A3B8',
+        accent: '#CBD5E1'
       },
-      tonality: 'Professional, Authoritative, Premium',
-      styling: 'Bold headings, Minimalist, Action-oriented',
+      tonality: 'Pending extraction...',
+      styling: 'Pending extraction...',
       styleNotes: '',
       referenceDocNames: []
     };
   });
 
-  // Persist Archive & Brand Context
+  // Persist Data
   useEffect(() => {
     localStorage.setItem(BRAND_STORAGE_KEY, JSON.stringify(brandContext));
   }, [brandContext]);
@@ -71,9 +71,9 @@ const App: React.FC = () => {
     try {
       const ideas = await getLeadMagnetSuggestions(val, brandContext);
       setSuggestions(ideas);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Something went wrong brainstorming. Try again.");
+      alert(error.message || "Something went wrong brainstorming. Try again.");
     } finally {
       setIsLoading(false);
     }
@@ -86,19 +86,34 @@ const App: React.FC = () => {
       if (newIdea) {
         setSuggestions(prev => prev.map(s => s.id === ideaId ? newIdea : s));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to refresh this idea. Try again later.");
+      alert(error.message || "Failed to refresh this idea. Try again later.");
     }
   };
 
   const handleSelectIdea = async (idea: LeadMagnetIdea) => {
     setSelectedIdea(idea);
     setIsLoading(true);
-    setLoadingMessage('Applying Brand DNA to your premium content...');
     setStep('generating');
+    
+    const messages = [
+      'Engaging Brand DNA Mimicry Engine...',
+      'Synthesizing Clinical Nuances...',
+      'Drafting Strategic Growth Framework...',
+      'Polishing Entrepreneur-Focused Copy...',
+      'Finalizing Premium Asset Layout...'
+    ];
+    
+    let msgIdx = 0;
+    const interval = setInterval(() => {
+      setLoadingMessage(messages[msgIdx] || 'Almost ready...');
+      msgIdx++;
+    }, 2500);
+
     try {
       const fullContent = await generateLeadMagnetContent(idea, brandContext);
+      clearInterval(interval);
       if (fullContent) {
         setContent(fullContent);
         
@@ -107,15 +122,16 @@ const App: React.FC = () => {
           id: crypto.randomUUID(),
           date: new Date().toISOString(),
           content: fullContent,
-          brandContext: JSON.parse(JSON.stringify(brandContext)) // snapshot branding at time of creation
+          brandContext: JSON.parse(JSON.stringify(brandContext)) 
         };
         setArchive(prev => [newItem, ...prev]);
         
         setStep('preview');
       }
-    } catch (error) {
+    } catch (error: any) {
+      clearInterval(interval);
       console.error(error);
-      alert("Failed to generate content.");
+      alert(error.message || "Failed to generate content.");
       setStep('suggestions');
     } finally {
       setIsLoading(false);
@@ -155,8 +171,6 @@ const App: React.FC = () => {
 
   const openArchiveItem = (item: ArchiveItem) => {
     setContent(item.content);
-    // Note: we can choose to use current branding or archived branding. 
-    // Here we use the archived branding for consistency with original.
     setStep('preview');
   };
 
@@ -165,7 +179,12 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 relative overflow-x-hidden selection:bg-blue-100 selection:text-blue-900 flex flex-col">
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden no-print">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-100/40 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-100/20 rounded-full blur-[120px]"></div>
+      </div>
+
       <Header 
         onLogoClick={reset} 
         onMemoryBankClick={() => setStep('archive')} 
@@ -174,13 +193,15 @@ const App: React.FC = () => {
         currentStep={step} 
       />
       
-      <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl no-print">
+      <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl no-print relative z-10">
+        <div className="glass-effect rounded-[3rem] p-1 shadow-2xl shadow-slate-200/50">
+          <div className="bg-white/40 rounded-[2.8rem] backdrop-blur-sm p-4 md:p-12 min-h-[70vh]">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
             <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${brandContext.colors.secondary} transparent transparent transparent` }}></div>
             <div className="text-center">
               <h2 className="text-2xl font-bold text-slate-900 heading-font">{loadingMessage}</h2>
-              <p className="text-slate-500 mt-2">Leveraging Brand Context & Gemini 3 Pro...</p>
+              <p className="text-slate-500 mt-2">Leveraging Brand Context & Gemini 2.0 Flash...</p>
             </div>
           </div>
         ) : (
@@ -188,6 +209,9 @@ const App: React.FC = () => {
             {step === 'input' && (
               <div className="max-w-4xl mx-auto mt-12 space-y-12">
                 <div className="text-center">
+                  <div className="bg-white p-4 rounded-3xl shadow-xl inline-block mb-8 border border-slate-100">
+                    <img src="/pt-biz-logo.png" className="h-16 object-contain" alt="PT Biz" />
+                  </div>
                   <h1 className="text-5xl font-black text-slate-900 mb-4 heading-font tracking-tight uppercase">
                     Brand Intelligence Studio
                   </h1>
@@ -301,6 +325,8 @@ const App: React.FC = () => {
             )}
           </>
         )}
+          </div>
+        </div>
       </main>
 
       <footer className="py-6 border-t bg-white no-print">
