@@ -97,10 +97,10 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
 
     for (const file of filesToProcess) {
        try {
-         const p = await processFile(file);
+         const p = await processFile(file as File);
          newFiles.push(p);
        } catch (err) {
-         console.error('File skip:', file.name, err);
+         console.error('File skip:', (file as File).name, err);
        }
     }
     

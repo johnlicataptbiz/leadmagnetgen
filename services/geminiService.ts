@@ -284,6 +284,8 @@ Rules:
 - EXTRACT AT LEAST 12 DISTINCT KPIs. Look for totals, averages, conversion rates, top performer stats, drop-off rates, and negative outliers.
 - Prefer actionable insights for marketing decisions.
 - If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step (e.g., "Check 'Lifecycle Stage' property in HubSpot").
+- ALWAYS include a "Cautions" array with at least 2 items.
+- ALWAYS include at least 2 charts. Use the numeric stats provided to create comparisons (e.g., Row Count per file, or specific column sums if available).
 - Output charts with small, readable datasets (top 5–10 items, or 30-day trend points).
 
 DATA (each report includes headers + a CSV sample):
@@ -374,7 +376,7 @@ ${brandPrompt}
           }
         }
       },
-      required: ["title", "summary", "kpis", "insights", "charts"]
+      required: ["title", "summary", "kpis", "insights", "charts", "cautions"]
     }
   };
 
