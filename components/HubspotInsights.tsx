@@ -40,6 +40,12 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
     "Finalizing analyst memo...",
     "Polishing dashboard..."
   ];
+  
+  const SUGGESTED_RECIPES = [
+    { name: 'Growth Core', icon: '🚀', files: ['Campaigns', 'Forms', 'Landing Pages'], desc: 'High-level ecosystem health.' },
+    { name: 'ROI Deep-Dive', icon: '💰', files: ['Ad Spend', 'Attribution', 'Lifecycle'], desc: 'Find where the money is.' },
+    { name: 'Funnel Optimizer', icon: '🎯', files: ['CTA Clicks', 'Raw Views', 'Submissions'], desc: 'Fix conversion bottlenecks.' }
+  ];
 
   // Helper to parse CSV/text
   const processFile = async (file: File): Promise<UploadedFilePreview> => {
@@ -451,13 +457,44 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
             {uploads.length === 0 ? (
                <div 
                  onClick={() => fileInputRef.current?.click()}
-                 className="cursor-pointer bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl p-12 text-center hover:border-blue-400 hover:bg-blue-50 transition-all group"
-               >
-                  <div className="w-16 h-16 bg-white rounded-2xl shadow-lg border border-slate-100 mx-auto flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
-                     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+               <div className="space-y-6">
+                 <div 
+                   onClick={() => fileInputRef.current?.click()}
+                   className="cursor-pointer bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl p-12 text-center hover:border-blue-400 hover:bg-blue-50 transition-all group"
+                 >
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-lg border border-slate-100 mx-auto flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
+                       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    </div>
+                     <h3 className="text-lg font-black text-slate-700 uppercase">Drop Report CSVs Here</h3>
+                     <p className="text-slate-400 text-sm mt-2">or click to browse multiple files</p>
                   </div>
-                  <h3 className="text-lg font-black text-slate-700 uppercase">Drop Report CSVs Here</h3>
-                  <p className="text-slate-400 text-sm mt-2">or click to browse multiple files</p>
+                  
+                  <div className="pt-6 border-t border-slate-100">
+                     <div className="flex items-center gap-2 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-500">
+                          <path fillRule="evenodd" d="M9.002 1.995a.75.75 0 01.797.485L9.99 4.25H12a.75.75 0 01.75.75v.75a.75.75 0 01-.75.75h-1.749l-.235 1.175a1.425 1.425 0 00-.293.736c-.281.988-.555 1.704-1.007 2.406C8.174 11.01 7.5 12.333 7.5 13.5c0 1.835 1.474 3 3.002 3 1.528 0 3.002-1.165 3.002-3a.75.75 0 011.5 0c0 2.436-2.262 4.5-4.502 4.5-2.24 0-4.5-2.064-4.5-4.5 0-1.226.684-2.501 1.67-3.908.54-.778.994-1.44 1.27-2.411l.212-1.116h-3.24c-.211 0-.413-.065-.583-.185A.953.953 0 011.997 4.75V4.25a.75.75 0 01.75-.75H6.75l.45-1.897a.75.75 0 01.797-.485h1.005zM18.75 18a.75.75 0 01.75.75v.75a.75.75 0 01-.75.75h-3a.75.75 0 01-.75-.75v-.75a.75.75 0 01.75-.75h3z" clipRule="evenodd" />
+                        </svg>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Analysis Recipes (Best Combinations)</h4>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {SUGGESTED_RECIPES.map((r, i) => (
+                          <div key={i} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl hover:border-blue-200 transition-colors group">
+                             <div className="flex items-center gap-2 mb-1">
+                                <span className="text-lg">{r.icon}</span>
+                                <span className="font-extrabold text-[11px] text-slate-800 uppercase tracking-tight">{r.name}</span>
+                             </div>
+                             <p className="text-[9px] text-slate-500 mb-3 leading-tight">{r.desc}</p>
+                             <div className="flex flex-wrap gap-1">
+                                {r.files.map(f => (
+                                  <span key={f} className="text-[8px] font-black bg-white border border-slate-200 text-slate-400 px-1.5 py-0.5 rounded-md group-hover:text-blue-500 group-hover:border-blue-100 transition-colors">
+                                     {f}
+                                  </span>
+                                ))}
+                             </div>
+                          </div>
+                        ))}
+                     </div>
+                  </div>
                </div>
             ) : (
                <div className="flex flex-col gap-4">
