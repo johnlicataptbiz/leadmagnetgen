@@ -144,7 +144,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
     if (!e.target.files) return;
     setErrorMessage(null);
     
-    const selectedFiles = Array.from(e.target.files).slice(0, 12 - uploads.length) as File[];
+    const selectedFiles = Array.from(e.target.files).slice(0, 10 - uploads.length) as File[];
     
     // 1. Add them all as pending first
     const pendingFiles: UploadedFilePreview[] = selectedFiles.map(f => ({
@@ -158,22 +158,31 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
     
     setUploads(prev => [...prev, ...pendingFiles]);
 
-    // 2. Process them one by one
-    for (const pFile of pendingFiles) {
-       // Find the real browser file object
-       const realFile = selectedFiles.find(f => (f as File).name === pFile.name);
-       if (!realFile) continue;
-
-       // Set to processing
-       setUploads(prev => prev.map(u => u.id === pFile.id ? { ...u, status: 'processing' } : u));
-
-       try {
-         const processed = await processFile(realFile as File);
-         setUploads(prev => prev.map(u => u.id === pFile.id ? { ...processed, id: pFile.id } : u));
-       } catch (err) {
-         console.error('File skip:', pFile.name, err);
-         setUploads(prev => prev.map(u => u.id === pFile.id ? { ...u, status: 'error' } : u));
-       }
+    // 2. Process them in parallel
+    try {
+      const results = await Promise.all(
+        pendingFiles.map(async (pFile) => {
+          const realFile = selectedFiles.find(f => (f as File).name === pFile.name);
+          if (!realFile) return pFile;
+          
+          setUploads(prev => prev.map(u => u.id === pFile.id ? { ...u, status: 'processing' } : u));
+          
+          try {
+            const processed = await processFile(realFile as File);
+            return { ...processed, id: pFile.id };
+          } catch (err) {
+            console.error('File skip:', pFile.name, err);
+            return { ...pFile, status: 'error' as const };
+          }
+        })
+      );
+      
+      setUploads(prev => prev.map(u => {
+        const result = results.find(r => r.id === u.id);
+        return result || u;
+      }));
+    } catch (err) {
+      console.error('Parallel processing failed', err);
     }
     
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -421,7 +430,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
             </button>
             <h2 className="text-2xl font-black uppercase text-slate-900 tracking-tight mb-2">Market Data Intelligence</h2>
             <p className="text-slate-500 text-xs mb-8 max-w-md mx-auto">
-          Upload your exported CSVs from HubSpot (Campaigns, Forms, Landing Pages). Our AI Analyst will correlate the data into a unified dashboard. (Max 12 files)
+          Upload your exported CSVs from HubSpot (Campaigns, Forms, Landing Pages). Our AI Analyst will correlate the data into a unified dashboard. (Max 10 files)
         </p></div>
 
          {errorMessage && (

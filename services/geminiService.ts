@@ -291,9 +291,11 @@ Rules:
 - For each KPI, include an insightful note explaining its strategic significance.
 - Prefer actionable insights for marketing decisions.
 - If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step.
-- ALWAYS include a "Cautions" array with at least 2 items.
-- ALWAYS include at least 1–2 charts. Use the numeric stats provided to create comparisons.
-- Output charts with small, readable datasets (top 5–8 items).
+- ALWAYS include at least 2 charts. 
+- FOR CHARTS: Prioritize using the provided "Numeric stats (sum/min/max)" to create comparisons across different files or categories.
+- Each chart MUST have a 'series' with at least 5-10 'points' to ensure the visual is meaningful.
+- Output charts with small, readable datasets (top 8-10 items).
+- If a chart compares files, use the file names as X-axis labels.
 
 DATA (each report includes headers + a CSV sample):
 ${reports
@@ -303,7 +305,7 @@ ${reports
       : "";
     return `\n--- REPORT ${idx + 1}: ${r.name} ---\nRowCount: ${r.rowCount}\nHeaders: ${r.headers.join(
       " | "
-    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 2000)}`;
+    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 4000)}`;
   })
   .join("\n")}
 
