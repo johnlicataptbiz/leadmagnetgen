@@ -4,9 +4,9 @@ import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext, Smart
 
 const marketReportToPrompt = (report?: SmartMarketReport | null) => {
   if (!report) return "";
-  const kpis = (report.kpis || []).slice(0, 15).map(k => `- ${k.label}: ${k.value}${k.note ? ` (${k.note})` : ""}`).join("\n");
-  const insights = (report.insights || []).slice(0, 10).map(i => `- ${i}`).join("\n");
-  const cautions = (report.cautions || []).slice(0, 8).map(c => `- ${c.caution} (Action: ${c.action})`).join("\n");
+  const kpis = (report.kpis || []).slice(0, 10).map(k => `- ${k.label}: ${k.value}${k.note ? ` (${k.note})` : ""}`).join("\n");
+  const insights = (report.insights || []).slice(0, 8).map(i => `- ${i}`).join("\n");
+  const cautions = (report.cautions || []).slice(0, 5).map(c => `- ${c.caution} (Action: ${c.action})`).join("\n");
 
   return `Market Intelligence (auto-generated dashboard):
 Title: ${report.title}
@@ -288,12 +288,12 @@ Your job: produce ONE unified "Smart Market Report" that cross-references all re
 Rules:
 - Infer what each report represents from column names (pages/campaigns/forms/sources/etc).
 - Cross-reference reports when possible (e.g., same URL/title/campaign appearing in multiple exports).
-- EXTRACT AT LEAST 12 DISTINCT KPIs. Look for totals, averages, conversion rates, top performer stats, drop-off rates, and negative outliers.
+- EXTRACT AT LEAST 8 DISTINCT KPIs. Look for totals, averages, conversion rates, and top performers.
 - Prefer actionable insights for marketing decisions.
-- If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step (e.g., "Check 'Lifecycle Stage' property in HubSpot").
+- If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step.
 - ALWAYS include a "Cautions" array with at least 2 items.
-- ALWAYS include at least 1–2 charts. Use the numeric stats provided to create comparisons (e.g., Row Count per file, or specific column sums if available).
-- Output charts with small, readable datasets (top 5–10 items, or 30-day trend points).
+- ALWAYS include at least 1–2 charts. Use the numeric stats provided to create comparisons.
+- Output charts with small, readable datasets (top 5–8 items).
 
 DATA (each report includes headers + a CSV sample):
 ${reports
@@ -303,7 +303,7 @@ ${reports
       : "";
     return `\n--- REPORT ${idx + 1}: ${r.name} ---\nRowCount: ${r.rowCount}\nHeaders: ${r.headers.join(
       " | "
-    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 50000)}`;
+    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 10000)}`;
   })
   .join("\n")}
 
