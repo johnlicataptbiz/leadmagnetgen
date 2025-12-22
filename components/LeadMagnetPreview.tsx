@@ -9,6 +9,7 @@ interface LeadMagnetPreviewProps {
 
 const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandContext }) => {
   const { colors, logoUrl } = brandContext;
+  const { coverImageUrl } = content;
 
   return (
     <div className="bg-white shadow-2xl mx-auto rounded-3xl overflow-hidden preview-container border border-slate-200 selection:bg-blue-100 selection:text-blue-900" id="preview-doc">
@@ -20,8 +21,18 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
       >
         {/* Modern Shimmer & Glow */}
         <div className="shimmer-active absolute inset-0 opacity-10 pointer-events-none"></div>
-        <div className="absolute top-1/4 left-1/4 cover-accent-circles rounded-full blur-[180px] opacity-30 animate-pulse" style={{ backgroundColor: colors.secondary }}></div>
-        <div className="absolute bottom-1/4 right-1/4 cover-accent-circles rounded-full blur-[180px] opacity-20" style={{ backgroundColor: colors.accent }}></div>
+        
+        {coverImageUrl ? (
+          <div className="absolute inset-0 z-0">
+             <img src={coverImageUrl} className="w-full h-full object-cover opacity-40 mix-blend-overlay" alt="Cover Art" />
+             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
+          </div>
+        ) : (
+          <>
+            <div className="absolute top-1/4 left-1/4 cover-accent-circles rounded-full blur-[180px] opacity-30 animate-pulse" style={{ backgroundColor: colors.secondary }}></div>
+            <div className="absolute bottom-1/4 right-1/4 cover-accent-circles rounded-full blur-[180px] opacity-20" style={{ backgroundColor: colors.accent }}></div>
+          </>
+        )}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none grid-overlay"></div>
         
         {/* Header / Logo */}

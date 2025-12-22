@@ -21,17 +21,23 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Construct Gemini API request - using Gemini 3 Flash (latest)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+    // Select model based on action - Now featuring Nano Banana (Gemini 3)
+    const modelName = action === 'image' ? 'gemini-3-pro-image-preview' : 'gemini-3-flash-preview';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    
     
     const requestBody = {
       contents: action === 'multimodal' 
         ? [{ role: 'user', parts: payload.parts }]
         : [{ role: 'user', parts: [{ text: payload.prompt }] }],
       generationConfig: {
-        response_mime_type: "application/json",
-        response_schema: payload.responseSchema
-      }
+        response_mime_type: action === 'image' ? "text/plain" : "application/json",
+        response_schema: action === 'image' ? undefined : payload.responseSchema,
+        // Apply high precision settings if requested
+        thinkingLevel: payload.precision === 'high' ? 'high' : undefined,
+      },
+      // Ultra high res for detailed architectural or map analysis
+      media_resolution: payload.resolution === 'ultra' ? 'media_resolution_ultra_high' : undefined
     };
 
     // Add system instruction if provided
@@ -60,20 +66,26 @@ export default async function handler(req, res) {
     const geminiData = await geminiResponse.json();
     const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!generatedText) {
-      return res.status(500).json({ 
-        error: 'No content generated',
-        candidates: geminiData.candidates
-      });
+    // For image generation (Nano Banana), the model returns binary/inlineData
+    if (action === 'image') {
+       const imagePart = geminiData.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+       if (imagePart) {
+          return res.status(200).json({ 
+             url: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
+             metadata: geminiData.usageMetadata 
+          });
+       }
+       // Fallback: check if it returned a text description of an image instead of the image itself
+       return res.status(200).json({ error: 'Image generation failed - no binary data returned', raw: generatedText });
     }
 
-    // Parse and return the JSON response
+    // Parse and return the JSON response for text/data tasks
     try {
       return res.status(200).json(JSON.parse(generatedText));
     } catch (parseError) {
       return res.status(500).json({ 
         error: 'Failed to parse AI response as JSON',
-        raw: generatedText.substring(0, 200)
+        raw: generatedText?.substring(0, 200) || 'Empty response'
       });
     }
 

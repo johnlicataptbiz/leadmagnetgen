@@ -24,7 +24,7 @@ ${cautions || "- (none)"}`;
  * This avoids bundling the Google SDK in the frontend, which triggers browser security warnings
  * and makes the application more robust.
  */
-const callAIProxy = async (action: 'text' | 'multimodal', payload: any) => {
+const callAIProxy = async (action: 'text' | 'multimodal' | 'image', payload: any) => {
   const response = await fetch('/api/ai', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -393,5 +393,19 @@ ${brandPrompt}
     console.error("Failed to generate smart market report", e);
     const message = e instanceof Error ? e.message : "Failed to generate smart market report";
     throw new Error(message);
+  }
+};
+export const generateNanoBananaImage = async (prompt: string, precision: "high" | "standard" = "standard"): Promise<{ url: string } | null> => {
+  const payload = {
+    prompt: `Generate a professional, high-fidelity marketing asset for: ${prompt}. Style: Clean, modern, business-oriented. No text, focus on concept.`,
+    precision,
+    resolution: "ultra"
+  };
+
+  try {
+    return await callAIProxy("image", payload);
+  } catch (e) {
+    console.error("Nano Banana Image Generation Failed", e);
+    return null;
   }
 };

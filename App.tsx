@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppStep, LeadMagnetIdea, LeadMagnetContent, BrandContext, ArchiveItem, SmartMarketReport } from './types';
-import { getLeadMagnetSuggestions, generateLeadMagnetContent, getSingleLeadMagnetSuggestion } from './services/geminiService';
+import { getLeadMagnetSuggestions, generateLeadMagnetContent, analyzeStyleReference, getSingleLeadMagnetSuggestion, generateSmartMarketReport, generateNanoBananaImage } from './services/geminiService';
 import Header from './components/Header';
 import TopicForm from './components/TopicForm';
 import SuggestionList from './components/SuggestionList';
@@ -9,6 +9,7 @@ import LeadMagnetPreview from './components/LeadMagnetPreview';
 import HubspotInsights from './components/HubspotInsights';
 import BrandIntelligence from './components/BrandIntelligence';
 import MemoryBank from './components/MemoryBank';
+import { Sparkles } from 'lucide-react'; // Assuming Sparkles icon is available from lucide-react
 
 const BRAND_STORAGE_KEY = 'pt_biz_brand_context';
 const ARCHIVE_STORAGE_KEY = 'pt_biz_memory_bank';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [leadForm, setLeadForm] = useState({ name: '', email: '', practice: '', consent: false });
   const [leadStatus, setLeadStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -208,6 +210,22 @@ const App: React.FC = () => {
       setErrorMessage("Failed to generate PDF. Please try again or use the new 'Copy HTML' feature.");
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!content) return;
+    setIsGeneratingImage(true);
+    try {
+      const result = await generateNanoBananaImage(content.title);
+      if (result?.url) {
+        setContent({ ...content, coverImageUrl: result.url });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate AI art. Check console for details.");
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -437,6 +455,24 @@ const App: React.FC = () => {
                       Close
                     </button>
                     <button 
+                      onClick={handleGenerateImage}
+                      className="px-6 py-2 border-2 font-bold heading-font uppercase text-xs flex items-center gap-2 hover:bg-slate-50 transition-all"
+                      style={{ borderColor: brandContext.colors.secondary, color: brandContext.colors.secondary }}
+                      disabled={isGeneratingImage}
+                    >
+                      {isGeneratingImage ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
+                          Rendering Art...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3" />
+                          AI Art (Nano Banana)
+                        </>
+                      )}
+                    </button>
+                    <button 
                       onClick={handleExportPDF}
                       className="px-8 py-2 text-white font-bold heading-font uppercase text-xs flex items-center gap-2 shadow-lg"
                       style={{ backgroundColor: brandContext.colors.secondary }}
@@ -449,7 +485,7 @@ const App: React.FC = () => {
                       className="px-6 py-2 border-2 text-slate-700 font-bold heading-font uppercase text-xs hover:bg-slate-50 transition-colors"
                       style={{ borderColor: brandContext.colors.secondary, color: brandContext.colors.secondary }}
                     >
-                      &lt;/&gt; Copy HTML
+                      Copy HTML
                     </button>
                   </div>
                 </div>

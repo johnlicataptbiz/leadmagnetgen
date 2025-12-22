@@ -10,6 +10,7 @@ export interface LeadMagnetIdea {
 export interface LeadMagnetContent {
   title: string;
   subtitle: string;
+  coverImageUrl?: string;
   introduction: string;
   sections: Array<{
     heading: string;

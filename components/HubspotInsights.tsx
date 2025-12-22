@@ -1,7 +1,11 @@
-
 import React, { useState, useRef } from 'react';
 import { BrandContext, SmartMarketReport, SmartChart, SmartChartSeries } from '../types';
 import { generateSmartMarketReport } from '../services/geminiService';
+import { TrendingUp, Info, AlertTriangle, FileText, Upload, Sparkles, X, Check, Loader2, ChevronRight, BarChart3, LineChart as LineChartIcon, Table as TableIcon } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+  LineChart, Line, AreaChart, Area, CartesianGrid, Cell, Legend
+} from 'recharts';
 
 interface HubspotInsightsProps {
   brandContext: BrandContext;
@@ -185,54 +189,85 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
   // --- RENDERERS ---
 
   const renderChart = (chart: SmartChart, idx: number) => {
-    // Robustness check
-    if (!chart.series || chart.series.length === 0 || !chart.series[0].points || chart.series[0].points.length === 0) {
+    const hasData = chart.series && chart.series.length > 0 && chart.series[0].points && chart.series[0].points.length > 0;
+
+    if (!hasData) {
        return (
-          <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-4 break-inside-avoid flex items-center justify-center h-64">
-             <div className="text-center text-slate-400">
-                <p className="text-xs font-bold uppercase mb-2">Unavailable</p>
-                <p className="text-[10px] max-w-[150px] mx-auto opacity-70">Chart data for "{chart.title}" could not be generated from the dataset.</p>
+          <div key={idx} className="bg-white/50 border border-slate-200 rounded-2xl p-8 mb-6 break-inside-avoid flex flex-col items-center justify-center min-h-[300px] text-center backdrop-blur-sm">
+             <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-slate-400" />
              </div>
+             <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wider mb-2">{chart.title || 'Visual Analysis'}</h4>
+             <p className="text-xs text-slate-500 max-w-[200px] leading-relaxed">This visual could not be generated from the current dataset. Check file headers.</p>
           </div>
        );
     }
-  
-    // Simple visualizer for bar/line
-    const maxVal = chart.series.reduce((max, s) => {
-        const sMax = Math.max(...s.points.map(p => p.y));
-        return sMax > max ? sMax : max;
-    }, 0) || 100;
+
+    // Transform data for Recharts (Format: [{ x: '...', series1: 10, series2: 20 }])
+    const dataPoints = chart.series![0].points.map((p, pIdx) => {
+       const obj: any = { x: p.x };
+       chart.series!.forEach(s => {
+          obj[s.name] = s.points[pIdx]?.y || 0;
+       });
+       return obj;
+    });
+
+    const colors = [brandContext.colors.primary, brandContext.colors.secondary, brandContext.colors.accent, '#94a3b8', '#64748b'];
 
     return (
-      <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-4 break-inside-avoid">
-         <div className="flex items-center justify-between mb-4">
-             <div>
-                <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{chart.title}</h4>
-                {chart.note && <p className="text-xs text-slate-500 mt-1">{chart.note}</p>}
-             </div>
-             <span className="text-[10px] font-black uppercase text-slate-400 border border-slate-200 px-2 py-1 rounded">{chart.type}</span>
-         </div>
-         
-         {/* Simple Bar/Line Viz Implementation */}
-         <div className="h-48 flex items-end gap-2 border-b border-slate-300 pb-2 overflow-x-auto">
-            {chart.series[0].points.slice(0, 12).map((p, i) => { // limit dots
-               const height = Math.max(5, (p.y / maxVal) * 100);
-               return (
-                  <div key={i} className="flex-1 min-w-[30px] flex flex-col items-center gap-1 group">
-                     <div 
-                        className={`w-full rounded-t ${chart.type === 'line' ? 'bg-blue-400 w-1 mx-auto' : 'bg-slate-800'}`} 
-                        style={{ height: `${height}%` }}
-                     ></div>
-                     <span className="text-[9px] text-slate-500 truncate w-full text-center">{p.x}</span>
-                     {/* Tooltip */}
-                     <div className="absolute opacity-0 group-hover:opacity-100 bg-black text-white text-[10px] p-1 rounded -mt-8 pointer-events-none z-10 whitespace-nowrap">
-                        {p.y}
-                     </div>
-                  </div>
-               )
-            })}
-         </div>
-         {chart.xLabel && <p className="text-center text-[10px] font-bold text-slate-400 mt-2 uppercase">{chart.xLabel}</p>}
+      <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-6 mb-6 break-inside-avoid shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between mb-8">
+              <div className="flex-1">
+                 <div className="flex items-center gap-2 mb-1">
+                    {chart.type === 'bar' ? <BarChart3 className="w-4 h-4 text-slate-400" /> : <LineChartIcon className="w-4 h-4 text-slate-400" />}
+                    <h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">{chart.title}</h4>
+                 </div>
+                 {chart.note && (
+                   <div className="flex items-start gap-1.5 mt-2">
+                     <Info className="w-3 h-3 text-slate-400 mt-0.5 shrink-0" />
+                     <p className="text-[11px] text-slate-500 italic leading-snug">{chart.note}</p>
+                   </div>
+                 )}
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                 <span className="text-[9px] font-black uppercase text-slate-400 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">{chart.type}</span>
+              </div>
+          </div>
+          
+          <div className="h-64 w-full">
+             <ResponsiveContainer width="100%" height="100%">
+                {chart.type === 'line' ? (
+                  <LineChart data={dataPoints} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="x" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b' }} />
+                    <Tooltip 
+                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px', fontWeight: 'bold' }}
+                       cursor={{ stroke: '#e2e8f0', strokeWidth: 2 }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
+                    {chart.series!.map((s, si) => (
+                       <Line key={s.name} type="monotone" dataKey={s.name} stroke={colors[si % colors.length]} strokeWidth={3} dot={{ r: 4, fill: colors[si % colors.length], strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                    ))}
+                  </LineChart>
+                ) : (
+                  <BarChart data={dataPoints} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="x" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748b' }} />
+                    <Tooltip 
+                       cursor={{ fill: '#f8fafc' }}
+                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '11px', fontWeight: 'bold' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
+                    {chart.series!.map((s, si) => (
+                       <Bar key={s.name} dataKey={s.name} fill={colors[si % colors.length]} radius={[4, 4, 0, 0]} barSize={chart.series!.length > 1 ? undefined : 30} />
+                    ))}
+                  </BarChart>
+                )}
+             </ResponsiveContainer>
+          </div>
+          {chart.xLabel && <p className="text-center text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-widest">{chart.xLabel}</p>}
       </div>
     );
   };
