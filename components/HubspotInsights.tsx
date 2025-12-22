@@ -120,7 +120,6 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
   const [topBySessions, setTopBySessions] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
   const [topByRate, setTopByRate] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [showExportHelp, setShowExportHelp] = useState(false);
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -240,106 +239,51 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
       )}
       {!analysis ? (
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div className="bg-orange-50 border-b border-orange-100 p-6 flex items-center space-x-4">
-              <div className="w-12 h-12 bg-orange-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.8,11c-0.4,0-0.7,0.3-0.7,0.7v7.5c0,0.4,0.3,0.7,0.7,0.7c0.4,0,0.7-0.3,0.7-0.7v-7.5C19.5,11.3,19.2,11,18.8,11z M15,11 c-0.4,0-0.7,0.3-0.7,0.7v7.5c0,0.4,0.3,0.7,0.7,0.7c0.4,0,0.7-0.3,0.7-0.7v-7.5C15.7,11.3,15.4,11,15,11z M11.2,14 c-0.4,0-0.7,0.3-0.7,0.7v4.5c0,0.4,0.3,0.7,0.7,0.7c0.4,0,0.7-0.3,0.7-0.7v-4.5C11.9,14.3,11.6,14,11.2,14z M7.5,14 c-0.4,0-0.7,0.3-0.7,0.7v4.5c0,0.4,0.3,0.7,0.7,0.7c0.4,0,0.7-0.3,0.7-0.7v-4.5C8.2,14.3,7.9,14,7.5,14z M20.2,4H3.8 C2.8,4,2,4.8,2,5.8v12.5c0,1,0.8,1.8,1.8,1.8h16.5c1,0,1.8-0.8,1.8-1.8V5.8C22,4.8,21.2,4,20.2,4z M20.5,18.2 c0,0.2-0.1,0.3-0.3,0.3H3.8c-0.2,0-0.3-0.1-0.3-0.3V5.8c0-0.2,0.1-0.3,0.3-0.3h16.5c0.2,0,0.3,0.1,0.3,0.3V18.2z M12,11.2V7 c0-0.4-0.3-0.7-0.7-0.7c-0.4,0-0.7,0.3-0.7,0.7v4.2c-0.8,0.2-1.5,0.9-1.5,1.8c0,1,0.8,1.8,1.8,1.8c1,0,1.8-0.8,1.8-1.8 C12.7,12,12.4,11.4,12,11.2z"/>
-                </svg>
-              </div>
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-10">
+            <div className="flex items-start justify-between gap-6 flex-wrap">
               <div>
-                <h2 className="text-xl font-black heading-font text-slate-900">Market Intelligence Export</h2>
-                <p className="text-sm text-slate-600">Analyze HubSpot performance data to identify your next winning play.</p>
+                <h2 className="text-2xl font-black heading-font text-slate-900 uppercase">Insights Dashboard</h2>
+                <p className="text-slate-500 mt-2 max-w-2xl">
+                  Upload a HubSpot CSV to generate a KPI dashboard. Optional: generate AI strategy ideas from your export.
+                </p>
               </div>
-            </div>
-            
-            <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="space-y-3">
-                <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
-                <h3 className="font-bold text-slate-900 uppercase text-xs tracking-widest">Analytics Tools</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">Go to <strong>Reports &gt; Traffic Analytics</strong> in your HubSpot portal.</p>
-              </div>
-              <div className="space-y-3">
-                <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
-                <h3 className="font-bold text-slate-900 uppercase text-xs tracking-widest">30 Day Filter</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">Set range to <strong>"Last 30 Days"</strong> and select "Pages" or "Campaigns".</p>
-              </div>
-              <div className="space-y-3">
-                <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
-                <h3 className="font-bold text-slate-900 uppercase text-xs tracking-widest">Export CSV</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">Click <strong>Export</strong> and choose <strong>CSV</strong> format. Ensure all columns are included.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-10 text-center">
-            <h2 className="text-2xl font-black heading-font text-slate-900 mb-2 uppercase">Analyze & Pivot</h2>
-            <p className="text-slate-500 mb-8 max-w-lg mx-auto">Upload your HubSpot export to see real KPI snapshots and top performers. Then optionally generate AI strategy ideas from that data.</p>
-
-            <div className="mb-6">
-              <button
-                type="button"
-                onClick={() => setShowExportHelp(v => !v)}
-                className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
-              >
-                {showExportHelp ? 'Hide HubSpot export steps' : 'Show HubSpot export steps'}
-              </button>
-              {showExportHelp && (
-                <div className="mt-4 text-left bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-6">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">This export should include</p>
-                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                      <li><span className="font-black">Label</span>: Page/URL/Title/Campaign (one of these).</li>
-                      <li><span className="font-black">Traffic</span>: Sessions (preferred) or Visits/Views/Pageviews.</li>
-                      <li><span className="font-black">Conversions</span> (optional): Submissions/Conversions/New contacts/Form submissions.</li>
-                    </ul>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 min-w-[320px] flex-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Breeze AI export (recommended)</p>
+                <ol className="mt-3 space-y-1.5 text-sm text-slate-700 list-decimal list-inside">
+                  <li>HubSpot → <strong>Reports</strong> → <strong>Create report</strong> → <strong>AI-generated report</strong>.</li>
+                  <li>Paste prompt → <strong>Generate report</strong>.</li>
+                  <li><strong>Export → CSV</strong> and upload here.</li>
+                </ol>
+                <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Prompt (≤ 250 chars)</p>
+                    <button
+                      type="button"
+                      onClick={copyBreezePrompt}
+                      className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
+                    >
+                      {copied ? 'Copied' : 'Copy'}
+                    </button>
                   </div>
-
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Option A (recommended): Traffic Analytics → Pages</p>
-                    <ol className="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
-                      <li>HubSpot → <strong>Reports</strong> → <strong>Analytics Tools</strong> → <strong>Traffic Analytics</strong>.</li>
-                      <li>Set date range to <strong>Last 30 days</strong> (or <strong>Last 90 days</strong> if traffic is low).</li>
-                      <li>Open the <strong>Pages</strong> view (Top Pages / Page performance).</li>
-                      <li>Confirm the table shows <strong>Sessions</strong> (or Visits/Views/Pageviews).</li>
-                      <li>Click <strong>Export</strong> (top right) → <strong>CSV</strong>.</li>
-                    </ol>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Option B (best for Sessions + Conversions together): Custom Report</p>
-                    <ol className="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
-                      <li>HubSpot → <strong>Reports</strong> → <strong>Create report</strong>.</li>
-                      <li>Select <strong>AI-generated report</strong> (Breeze AI).</li>
-                      <li>Copy/paste the prompt below (≤ 250 chars) and click <strong>Generate report</strong>.</li>
-                      <li>Set the date range if needed (Last 30/90 days), then <strong>Export → CSV</strong>.</li>
-                    </ol>
-                    <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Breeze prompt (≤ 250 chars)</p>
-                        <button
-                          type="button"
-                          onClick={copyBreezePrompt}
-                          className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
-                        >
-                          {copied ? 'Copied' : 'Copy'}
-                        </button>
-                      </div>
-                      <p className="mt-3 font-mono text-[12px] text-slate-700 whitespace-pre-wrap break-words">
-                        {breezePrompt}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl p-4">
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Troubleshooting</p>
-                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                      <li>If Sessions show <strong>0</strong>, you likely exported a <strong>Forms</strong>/<strong>Contacts</strong> report instead of a <strong>Pages</strong>/<strong>Traffic</strong> report.</li>
-                      <li>If “Top by Conversion Rate” is empty, you’re missing Sessions or Conversions, or each row has under 25 sessions.</li>
-                    </ul>
-                  </div>
+                  <p className="mt-3 font-mono text-[12px] text-slate-700 whitespace-pre-wrap break-words">
+                    {breezePrompt}
+                  </p>
                 </div>
-              )}
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-xs font-black uppercase tracking-widest text-slate-500 hover:text-slate-700">
+                    Troubleshooting
+                  </summary>
+                  <div className="mt-3 space-y-2 text-sm text-slate-700">
+                    <p>
+                      Your export should include a label column (Page/URL/Title) and traffic (Sessions or Visits/Views/Pageviews). Conversions are optional.
+                    </p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>If Sessions show <strong>0</strong>, you likely exported a Forms/Contacts report instead of Pages/Traffic.</li>
+                      <li>If “Top by Conversion Rate” is empty, the export is missing Sessions or Conversions, or each row has under 25 sessions.</li>
+                    </ul>
+                  </div>
+                </details>
+              </div>
             </div>
             
             <div 
