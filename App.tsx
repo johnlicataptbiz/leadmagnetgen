@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Initialize Archive from LocalStorage
   const [archive, setArchive] = useState<ArchiveItem[]>(() => {
@@ -68,12 +69,13 @@ const App: React.FC = () => {
     setIsLoading(true);
     setLoadingMessage('Strategizing ideas using Brand Memory...');
     setStep('suggestions');
+    setErrorMessage(null);
     try {
       const ideas = await getLeadMagnetSuggestions(val, brandContext);
       setSuggestions(ideas);
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Something went wrong brainstorming. Try again.");
+      setErrorMessage(error.message || "Something went wrong brainstorming. Try again.");
     } finally {
       setIsLoading(false);
     }
@@ -81,6 +83,7 @@ const App: React.FC = () => {
 
   const handleRefreshIdea = async (ideaId: string) => {
     const existingTitles = suggestions.map(s => s.title);
+    setErrorMessage(null);
     try {
       const newIdea = await getSingleLeadMagnetSuggestion(topic, existingTitles, brandContext);
       if (newIdea) {
@@ -88,7 +91,7 @@ const App: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Failed to refresh this idea. Try again later.");
+      setErrorMessage(error.message || "Failed to refresh this idea. Try again later.");
     }
   };
 
@@ -96,6 +99,7 @@ const App: React.FC = () => {
     setSelectedIdea(idea);
     setIsLoading(true);
     setStep('generating');
+    setErrorMessage(null);
     
     const messages = [
       'Engaging Brand DNA Mimicry Engine...',
@@ -124,14 +128,22 @@ const App: React.FC = () => {
           content: fullContent,
           brandContext: JSON.parse(JSON.stringify(brandContext)) 
         };
-        setArchive(prev => [newItem, ...prev]);
+        setArchive(prev => {
+           // Prevent duplicates if any
+           if (prev.some(p => p.content.title === fullContent.title && new Date(p.date).toDateString() === new Date().toDateString())) {
+             return prev;
+           }
+           return [newItem, ...prev];
+        });
+        
+        console.log("Auto-archived:", newItem.id);
         
         setStep('preview');
       }
     } catch (error: any) {
       clearInterval(interval);
       console.error(error);
-      alert(error.message || "Failed to generate content.");
+      setErrorMessage(error.message || "Failed to generate content.");
       setStep('suggestions');
     } finally {
       setIsLoading(false);
@@ -144,20 +156,43 @@ const App: React.FC = () => {
     setStep('insights');
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     const element = document.getElementById('preview-doc');
-    if (!element) return;
+    // @ts-ignore
+    if (!element || !window.html2pdf) {
+      alert("PDF generation library not loaded or content missing. Please try again.");
+      return;
+    }
+    
     setIsExporting(true);
+    
+    // Small delay to ensure render
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     const opt = {
-      margin: 0,
-      filename: `${content?.title.toLowerCase().replace(/\s+/g, '-') || 'pt-biz-lead-magnet'}.pdf`,
+      margin: [0.2, 0, 0.2, 0], // Top, Right, Bottom, Left margins (in inches)
+      filename: `${content?.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'pt-biz-lead-magnet'}-${new Date().toISOString().split('T')[0]}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true,
+        scrollY: 0,
+      },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
-    // @ts-ignore
-    window.html2pdf().set(opt).from(element).save().then(() => setIsExporting(false)).catch(() => setIsExporting(false));
+
+    try {
+      // @ts-ignore
+      await window.html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      console.error("PDF Export failed:", err);
+      // @ts-ignore
+      setErrorMessage("Failed to generate PDF. check console for details.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const reset = () => {
@@ -167,6 +202,7 @@ const App: React.FC = () => {
     setSelectedIdea(null);
     setContent(null);
     setAnalysis(null);
+    setErrorMessage(null);
   };
 
   const openArchiveItem = (item: ArchiveItem) => {
@@ -196,6 +232,23 @@ const App: React.FC = () => {
       <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl no-print relative z-10">
         <div className="glass-effect rounded-[3rem] p-1 shadow-2xl shadow-slate-200/50">
           <div className="bg-white/40 rounded-[2.8rem] backdrop-blur-sm p-4 md:p-12 min-h-[70vh]">
+        {errorMessage && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 flex items-start justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+              <div>
+                <p className="font-black uppercase text-[10px] tracking-widest text-red-600">AI Error</p>
+                <p className="mt-1">{errorMessage}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="text-red-600 font-bold uppercase text-[10px] tracking-widest"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
             <div 

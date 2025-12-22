@@ -114,12 +114,20 @@ export const getLeadMagnetSuggestions = async (topic: string, brandContext?: Bra
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    return [];
+    console.error("Failed to fetch lead magnet suggestions", e);
+    const message = e instanceof Error ? e.message : "Failed to fetch lead magnet suggestions";
+    throw new Error(message);
   }
 };
 
 export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitles: string[], brandContext?: BrandContext): Promise<LeadMagnetIdea | null> => {
-  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}". Topic: ${topic}`;
+  const brandPrompt = brandContext
+    ? `Tone: ${brandContext.tonality}\nStyle: ${brandContext.styling}\nNotes: ${brandContext.styleNotes}`
+    : "";
+  const exclusions = existingTitles.length
+    ? `Avoid titles that are similar to: ${existingTitles.join('; ')}.`
+    : "";
+  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}".\n${exclusions}\n${brandPrompt}\nReturn a fresh angle that does not overlap with the excluded titles.`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
@@ -140,7 +148,9 @@ export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitle
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    return null;
+    console.error("Failed to refresh a lead magnet suggestion", e);
+    const message = e instanceof Error ? e.message : "Failed to refresh a lead magnet suggestion";
+    throw new Error(message);
   }
 };
 
@@ -179,7 +189,9 @@ export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandConte
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    return null;
+    console.error("Failed to generate lead magnet content", e);
+    const message = e instanceof Error ? e.message : "Failed to generate lead magnet content";
+    throw new Error(message);
   }
 };
 
@@ -217,6 +229,8 @@ export const analyzeHubspotData = async (rawContent: string, brandContext?: Bran
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    return null;
+    console.error("Failed to analyze HubSpot data", e);
+    const message = e instanceof Error ? e.message : "Failed to analyze HubSpot data";
+    throw new Error(message);
   }
 };

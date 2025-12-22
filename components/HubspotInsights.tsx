@@ -14,6 +14,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey,
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,6 +23,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey,
 
     setFileName(file.name);
     setLoading(true);
+    setErrorMessage(null);
 
     try {
       const text = await file.text();
@@ -32,7 +34,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey,
       }
     } catch (e: any) {
       console.error(e);
-      alert(`Error parsing or analyzing file: ${e.message || 'Unknown error'}`);
+      setErrorMessage(`Error parsing or analyzing file: ${e.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -40,6 +42,23 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey,
 
   return (
     <div className="space-y-8">
+      {errorMessage && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 flex items-start justify-between gap-6">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+            <div>
+              <p className="font-black uppercase text-[10px] tracking-widest text-red-600">AI Error</p>
+              <p className="mt-1">{errorMessage}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-red-600 font-bold uppercase text-[10px] tracking-widest"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {!analysis ? (
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
@@ -76,7 +95,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, apiKey,
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-10 text-center">
             <h2 className="text-2xl font-black heading-font text-slate-900 mb-2 uppercase">Analyze & Pivot</h2>
-            <p className="text-slate-500 mb-8 max-w-lg mx-auto">Upload your report. Gemini 3 Pro will identify winners and suggest your next strategic lead magnet.</p>
+            <p className="text-slate-500 mb-8 max-w-lg mx-auto">Upload your report. Gemini 3 Flash will identify winners and suggest your next strategic lead magnet.</p>
             
             <div 
               onClick={() => fileInputRef.current?.click()}

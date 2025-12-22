@@ -4,6 +4,22 @@ import { BrandContext } from '../types';
 // @ts-ignore
 import ColorThief from 'colorthief';
 
+let pdfWorkerSrc: string | null = null;
+let pdfjsModulePromise: Promise<any> | null = null;
+
+const loadPdfjs = async () => {
+  if (!pdfjsModulePromise) {
+    pdfjsModulePromise = import('pdfjs-dist');
+  }
+  const mod = await pdfjsModulePromise;
+  if (!pdfWorkerSrc) {
+    const workerMod = await import('pdfjs-dist/build/pdf.worker?url');
+    pdfWorkerSrc = workerMod.default || workerMod;
+  }
+  mod.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+  return mod;
+};
+
 interface BrandIntelligenceProps {
   context: BrandContext;
   onChange: (context: BrandContext) => void;
@@ -13,6 +29,7 @@ interface BrandIntelligenceProps {
 const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange, onClose }) => {
   const [processingState, setProcessingState] = useState<{type: 'logo' | 'pdf' | null, progress: number}>({ type: null, progress: 0 });
   const [pdfName, setPdfName] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,6 +38,7 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
   // Derived state: Is there any data?
   const hasData = context.referenceDocNames.length > 0 || context.logoUrl;
   const isProcessing = processingState.type !== null;
+  GlobalWorkerOptions.workerSrc = pdfWorker;
 
   const simulateProgress = () => {
     setProcessingState(prev => ({ ...prev, progress: 0 }));
@@ -92,53 +110,67 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
     });
   };
 
-  const analyzePDF = async (file: File): Promise<{tonality: string, styling: string, styleNotes: string}> => {
-    const reader = new FileReader();
-    return new Promise((resolve, reject) => {
-      reader.onload = async () => {
-        try {
-          const text = reader.result as string;
-          const sample = text.substring(0, 10000);
-          
-          const response = await fetch('/api/ai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'text',
-              payload: {
-                prompt: `Analyze this lead magnet context. Extract brand voice/tone, visual style guide, and any inferred color palette hints (e.g. "uses blue and orange").\n\n${sample}`,
-                systemInstruction: `Extract: 
-1. Tonality (voice/tone), 
-2. Styling (formatting patterns), 
-3. Style Notes (unique characteristics + any color hints found in text). 
-Be concise.`,
-                responseSchema: {
-                  type: 'object',
-                  properties: {
-                    tonality: { type: 'string' },
-                    styling: { type: 'string' },
-                    styleNotes: { type: 'string' }
-                  }
-                }
-              }
-            })
-          });
+  const extractPdfText = async (file: File): Promise<string> => {
+    try {
+      const data = await file.arrayBuffer();
+      const pdf = await getDocument({ data }).promise;
+      const pageCount = Math.min(pdf.numPages, 10);
+      let text = '';
+      for (let i = 1; i <= pageCount; i += 1) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item: any) => item.str).join(' ');
+        text += `\n${pageText}`;
+        if (text.length > 30000) break;
+      }
+      if (text.trim().length > 0) return text;
+    } catch (err) {
+      console.warn('PDF text extraction failed, falling back to raw text', err);
+    }
 
-          if (!response.ok) throw new Error('AI analysis failed');
-          const result = await response.json();
-          resolve(result);
-        } catch (err) {
-          reject(err);
-        }
-      };
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsText(file);
     });
   };
 
+  const analyzePDF = async (file: File): Promise<{tonality: string, styling: string, styleNotes: string}> => {
+    const text = await extractPdfText(file);
+    const sample = text.substring(0, 10000);
+    const response = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'text',
+        payload: {
+          prompt: `Analyze this lead magnet context. Extract brand voice/tone, visual style guide, and any inferred color palette hints (e.g. "uses blue and orange").\n\n${sample}`,
+          systemInstruction: `Extract: 
+1. Tonality (voice/tone), 
+2. Styling (formatting patterns), 
+3. Style Notes (unique characteristics + any color hints found in text). 
+Be concise.`,
+          responseSchema: {
+            type: 'object',
+            properties: {
+              tonality: { type: 'string' },
+              styling: { type: 'string' },
+              styleNotes: { type: 'string' }
+            }
+          }
+        }
+      })
+    });
+
+    if (!response.ok) throw new Error('AI analysis failed');
+    return await response.json();
+  };
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setErrorMessage(null);
 
     if (e.target.name === 'dna-file-upload') {
         // LOGO UPLOAD
@@ -167,6 +199,7 @@ Be concise.`,
         } catch (err) {
             clearInterval(interval);
             console.error(err);
+            setErrorMessage("Logo analysis failed. Please try a different file.");
             setProcessingState({ type: null, progress: 0 });
         }
     } else {
@@ -193,7 +226,7 @@ Be concise.`,
         } catch (err) {
             clearInterval(interval);
             console.error(err);
-            alert("Analysis failed. Please try again.");
+            setErrorMessage("PDF analysis failed. Please try again.");
             setProcessingState({ type: null, progress: 0 });
         }
     }
@@ -212,6 +245,23 @@ Be concise.`,
 
   return (
     <div className="max-w-7xl mx-auto py-6">
+      {errorMessage && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 flex items-start justify-between gap-6">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+            <div>
+              <p className="font-black uppercase text-[10px] tracking-widest text-red-600">AI Error</p>
+              <p className="mt-1">{errorMessage}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="text-red-600 font-bold uppercase text-[10px] tracking-widest"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <input 
         id="dna-file-upload"
         name="dna-file-upload"
