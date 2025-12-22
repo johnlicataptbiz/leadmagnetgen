@@ -155,7 +155,6 @@ const App: React.FC = () => {
 
   const handleInsightsAnalysis = (data: HubspotAnalysis) => {
     setAnalysis(data);
-    setSuggestions(data.strategicSuggestions);
     setStep('insights');
   };
 

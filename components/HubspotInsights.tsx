@@ -10,11 +10,114 @@ interface HubspotInsightsProps {
   onSelectIdea: (idea: LeadMagnetIdea) => void;
 }
 
+type CsvRow = Record<string, string>;
+
+const normalizeHeader = (h: string) => h.toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+const parseNumber = (value: string): number | null => {
+  if (!value) return null;
+  const cleaned = value.replace(/[$,%]/g, '').replace(/,/g, '').trim();
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+};
+
+const parseCsv = (text: string): { headers: string[]; rows: CsvRow[] } => {
+  const rows: string[][] = [];
+  let currentField = '';
+  let currentRow: string[] = [];
+  let inQuotes = false;
+
+  const pushField = () => {
+    currentRow.push(currentField);
+    currentField = '';
+  };
+  const pushRow = () => {
+    // Ignore trailing empty lines
+    if (currentRow.length === 1 && currentRow[0].trim() === '' && rows.length > 0) return;
+    rows.push(currentRow);
+    currentRow = [];
+  };
+
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    const next = i + 1 < text.length ? text[i + 1] : '';
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        currentField += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (!inQuotes && ch === ',') {
+      pushField();
+      continue;
+    }
+    if (!inQuotes && (ch === '\n' || ch === '\r')) {
+      // Handle CRLF
+      if (ch === '\r' && next === '\n') i += 1;
+      pushField();
+      pushRow();
+      continue;
+    }
+    currentField += ch;
+  }
+  pushField();
+  if (currentRow.length) pushRow();
+
+  const headers = (rows[0] || []).map(h => h.trim());
+  const dataRows = rows.slice(1).filter(r => r.some(v => v.trim() !== ''));
+  const mapped: CsvRow[] = dataRows.map((r) => {
+    const row: CsvRow = {};
+    headers.forEach((h, idx) => {
+      row[h] = (r[idx] ?? '').trim();
+    });
+    return row;
+  });
+
+  return { headers, rows: mapped };
+};
+
+const pickColumn = (headers: string[], candidates: string[]): string | null => {
+  const normalized = headers.map(h => ({ raw: h, n: normalizeHeader(h) }));
+  for (const c of candidates) {
+    const target = normalizeHeader(c);
+    const found = normalized.find(h => h.n === target) || normalized.find(h => h.n.includes(target));
+    if (found) return found.raw;
+  }
+  return null;
+};
+
+const getTop = <T,>(items: T[], count: number) => items.slice(0, count);
+
+const BarRow: React.FC<{ label: string; value: number; max: number; colorClass: string; suffix?: string }> = ({ label, value, max, colorClass, suffix }) => {
+  const width = max > 0 ? Math.max(2, (value / max) * 100) : 0;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-bold text-slate-700 truncate max-w-[70%]">{label}</span>
+        <span className="font-mono text-slate-500">{value.toLocaleString()}{suffix || ''}</span>
+      </div>
+      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+        <div className={`h-full ${colorClass}`} style={{ width: `${Math.min(100, width)}%` }}></div>
+      </div>
+    </div>
+  );
+};
+
 const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysis: initialAnalysis, onAnalysisComplete, onSelectIdea }) => {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(initialAnalysis || null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
+  const [kpis, setKpis] = useState<{ totalSessions: number; totalConversions: number; conversionRate: number; rows: number } | null>(null);
+  const [topBySessions, setTopBySessions] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
+  const [topByRate, setTopByRate] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -23,6 +126,33 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
     }
   }, [initialAnalysis]);
 
+  const computeDashboard = (headers: string[], rows: CsvRow[]) => {
+    const labelCol = pickColumn(headers, ['page', 'page title', 'title', 'url', 'page url', 'campaign', 'source', 'name']) || headers[0] || null;
+    const sessionsCol = pickColumn(headers, ['sessions', 'visits', 'pageviews', 'views']);
+    const conversionsCol = pickColumn(headers, ['submissions', 'conversions', 'contacts', 'new contacts', 'form submissions']);
+
+    const enriched = rows.map((r) => {
+      const label = labelCol ? (r[labelCol] || '(unknown)') : '(unknown)';
+      const sessions = sessionsCol ? (parseNumber(r[sessionsCol]) ?? 0) : 0;
+      const conversions = conversionsCol ? (parseNumber(r[conversionsCol]) ?? 0) : 0;
+      const rate = sessions > 0 ? conversions / sessions : 0;
+      return { label, sessions, conversions, rate };
+    });
+
+    const totalSessions = enriched.reduce((sum, r) => sum + r.sessions, 0);
+    const totalConversions = enriched.reduce((sum, r) => sum + r.conversions, 0);
+    const conversionRate = totalSessions > 0 ? totalConversions / totalSessions : 0;
+
+    const bySessions = [...enriched].sort((a, b) => b.sessions - a.sessions);
+    const byRate = [...enriched]
+      .filter(r => r.sessions >= 25)
+      .sort((a, b) => b.rate - a.rate);
+
+    setKpis({ totalSessions, totalConversions, conversionRate, rows: rows.length });
+    setTopBySessions(getTop(bySessions, 6));
+    setTopByRate(getTop(byRate, 6));
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -30,19 +160,48 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
     setFileName(file.name);
     setLoading(true);
     setErrorMessage(null);
+    setAnalysis(null);
+    setCsvHeaders([]);
+    setCsvRows([]);
+    setKpis(null);
+    setTopBySessions([]);
+    setTopByRate([]);
 
     try {
       const text = await file.text();
-      const result = await analyzeHubspotData(text.substring(0, 50000), brandContext);
+      const trimmed = text.length > 2_000_000 ? text.substring(0, 2_000_000) : text;
+      const parsed = parseCsv(trimmed);
+      setCsvHeaders(parsed.headers);
+      setCsvRows(parsed.rows);
+      computeDashboard(parsed.headers, parsed.rows);
+    } catch (e: any) {
+      console.error(e);
+      setErrorMessage(`Error parsing or analyzing file: ${e.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateAI = async () => {
+    if (!fileName || csvRows.length === 0) return;
+    if (isGeneratingAI) return;
+    setIsGeneratingAI(true);
+    setErrorMessage(null);
+    try {
+      // Give the model a compact slice of the raw CSV (headers + first N rows) to stay within limits.
+      const headerLine = csvHeaders.join(',');
+      const sampleRows = csvRows.slice(0, 200).map(r => csvHeaders.map(h => JSON.stringify(r[h] || '')).join(',')).join('\n');
+      const sample = `${headerLine}\n${sampleRows}`;
+      const result = await analyzeHubspotData(sample.substring(0, 50000), brandContext);
       if (result) {
         setAnalysis(result);
         onAnalysisComplete(result);
       }
     } catch (e: any) {
       console.error(e);
-      setErrorMessage(`Error parsing or analyzing file: ${e.message || 'Unknown error'}`);
+      setErrorMessage(e.message || 'Failed to generate AI insights.');
     } finally {
-      setLoading(false);
+      setIsGeneratingAI(false);
     }
   };
 
@@ -101,7 +260,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
 
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-10 text-center">
             <h2 className="text-2xl font-black heading-font text-slate-900 mb-2 uppercase">Analyze & Pivot</h2>
-            <p className="text-slate-500 mb-8 max-w-lg mx-auto">Upload your report. Gemini 3 Flash will identify winners and suggest your next strategic lead magnet.</p>
+            <p className="text-slate-500 mb-8 max-w-lg mx-auto">Upload your HubSpot export to see real KPI snapshots and top performers. Then optionally generate AI strategy ideas from that data.</p>
             
             <div 
               onClick={() => fileInputRef.current?.click()}
@@ -110,7 +269,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
               {loading ? (
                 <div className="space-y-4">
                   <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="font-bold text-blue-600 heading-font animate-pulse">Analyzing Performance Data...</p>
+                  <p className="font-bold text-blue-600 heading-font animate-pulse">Parsing report & building dashboard...</p>
                 </div>
               ) : fileName ? (
                 <div className="space-y-2">
@@ -124,6 +283,75 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
               )}
               <input type="file" ref={fileInputRef} hidden accept=".csv,.txt" onChange={handleFileUpload} disabled={loading} />
             </div>
+
+            {kpis && (
+              <div className="text-left space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-xl border border-slate-100 p-4">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400">Rows</p>
+                    <p className="mt-2 text-2xl font-black heading-font text-slate-900">{kpis.rows.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-100 p-4">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400">Sessions</p>
+                    <p className="mt-2 text-2xl font-black heading-font text-slate-900">{kpis.totalSessions.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-100 p-4">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400">Conversions</p>
+                    <p className="mt-2 text-2xl font-black heading-font text-slate-900">{kpis.totalConversions.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-100 p-4">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400">Conv. Rate</p>
+                    <p className="mt-2 text-2xl font-black heading-font text-slate-900">{(kpis.conversionRate * 100).toFixed(1)}%</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Top By Sessions</h3>
+                    <div className="space-y-4">
+                      {topBySessions.length === 0 ? (
+                        <p className="text-sm text-slate-500">Couldn’t find a sessions column in this export.</p>
+                      ) : (
+                        (() => {
+                          const max = topBySessions[0]?.sessions || 0;
+                          return topBySessions.map((r, idx) => (
+                            <BarRow key={idx} label={r.label} value={r.sessions} max={max} colorClass="bg-blue-600" />
+                          ));
+                        })()
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Top By Conversion Rate</h3>
+                    <div className="space-y-4">
+                      {topByRate.length === 0 ? (
+                        <p className="text-sm text-slate-500">Need sessions + conversions columns (and at least 25 sessions per row) to compute rates.</p>
+                      ) : (
+                        (() => {
+                          const max = topByRate[0]?.rate || 0;
+                          return topByRate.map((r, idx) => (
+                            <BarRow key={idx} label={r.label} value={Number((r.rate * 100).toFixed(1))} max={max * 100} colorClass="bg-green-500" suffix="%" />
+                          ));
+                        })()
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-[11px] text-slate-500">
+                    Dashboard is computed locally from the CSV. AI strategy is optional and uses a compact sample of your export.
+                  </p>
+                  <button
+                    onClick={generateAI}
+                    disabled={isGeneratingAI}
+                    className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-widest disabled:opacity-60"
+                  >
+                    {isGeneratingAI ? 'Generating AI Insights…' : 'Generate AI Strategy'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
