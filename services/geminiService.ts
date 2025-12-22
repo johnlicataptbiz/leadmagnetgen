@@ -4,7 +4,7 @@ import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext, Smart
 
 const marketReportToPrompt = (report?: SmartMarketReport | null) => {
   if (!report) return "";
-  const kpis = (report.kpis || []).slice(0, 8).map(k => `- ${k.label}: ${k.value}${k.note ? ` (${k.note})` : ""}`).join("\n");
+  const kpis = (report.kpis || []).slice(0, 15).map(k => `- ${k.label}: ${k.value}${k.note ? ` (${k.note})` : ""}`).join("\n");
   const insights = (report.insights || []).slice(0, 10).map(i => `- ${i}`).join("\n");
   const cautions = (report.cautions || []).slice(0, 8).map(c => `- ${c.caution} (Action: ${c.action})`).join("\n");
 
@@ -281,6 +281,7 @@ Your job: produce ONE unified "Smart Market Report" that cross-references all re
 Rules:
 - Infer what each report represents from column names (pages/campaigns/forms/sources/etc).
 - Cross-reference reports when possible (e.g., same URL/title/campaign appearing in multiple exports).
+- EXTRACT AT LEAST 12 DISTINCT KPIs. Look for totals, averages, conversion rates, top performer stats, drop-off rates, and negative outliers.
 - Prefer actionable insights for marketing decisions.
 - If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step (e.g., "Check 'Lifecycle Stage' property in HubSpot").
 - Output charts with small, readable datasets (top 5–10 items, or 30-day trend points).
