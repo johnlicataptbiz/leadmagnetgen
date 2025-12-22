@@ -21,10 +21,9 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Select model based on action - Nano Banana (Gemini 3)
+    // Select model based on 2025 Gemini 3 Specifications
     const modelName = action === 'image' ? 'gemini-3-pro-image-preview' : 'gemini-3-flash-preview';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-    
     
     const requestBody = {
       contents: action === 'multimodal' 
@@ -33,11 +32,9 @@ export default async function handler(req, res) {
       generationConfig: {
         response_mime_type: action === 'image' ? "text/plain" : "application/json",
         response_schema: action === 'image' ? undefined : payload.responseSchema,
-        // Apply high precision settings if requested
-        thinkingLevel: payload.precision === 'high' ? 'high' : undefined,
-      },
-      // Ultra high res for detailed architectural or map analysis
-      media_resolution: payload.resolution === 'ultra' ? 'media_resolution_ultra_high' : undefined
+        // Gemini 3 Thinking Levels
+        thinking_level: payload.precision === 'high' ? 'high' : 'low',
+      }
     };
 
     // Add system instruction if provided

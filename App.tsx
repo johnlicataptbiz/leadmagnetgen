@@ -181,19 +181,24 @@ const App: React.FC = () => {
     }
     
     setIsExporting(true);
+    setErrorMessage(null);
     
-    // Allow UI to update before heavy sync work
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Ensure we are at the top and the UI is stable
+    window.scrollTo(0, 0);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const opt = {
-      margin: [0.3, 0.4, 0.3, 0.4], 
+      margin: [0.1, 0.1, 0.1, 0.1], 
       filename: `${content?.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'pt-biz-lead-magnet'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         letterRendering: true,
+        allowTaint: false,
+        logging: false,
         scrollY: 0,
+        windowWidth: 1024, // Consistent width for export
         ignoreElements: (element: Element) => element.classList.contains('no-print')
       },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
@@ -201,11 +206,12 @@ const App: React.FC = () => {
     };
 
     try {
+      // Use Worker API for better stability in complex Vibe Coding layouts
       // @ts-ignore
       await window.html2pdf().set(opt).from(element).save();
     } catch (err: any) {
       console.error("PDF Export failed:", err);
-      setErrorMessage("Failed to generate PDF. Please try again or use the new 'Copy HTML' feature.");
+      setErrorMessage(`PDF Generation Failed: ${err.message || "Renderer Error"}. Try 'Copy HTML' as a fallback.`);
     } finally {
       setIsExporting(false);
     }
@@ -219,9 +225,9 @@ const App: React.FC = () => {
       if (result?.url) {
         setContent({ ...content, coverImageUrl: result.url });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Failed to generate AI art. Check console for details.");
+      setErrorMessage(`AI Art failed: ${e.message || "Model timeout"}. Try again in a few seconds.`);
     } finally {
       setIsGeneratingImage(false);
     }

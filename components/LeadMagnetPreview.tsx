@@ -47,7 +47,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
         
         {coverImageUrl ? (
           <div className="absolute inset-0 z-0">
-             <img src={coverImageUrl} className="w-full h-full object-cover opacity-40 mix-blend-overlay" alt="Cover Art" />
+             <img src={coverImageUrl} crossOrigin="anonymous" className="w-full h-full object-cover opacity-40 mix-blend-overlay" alt="Cover Art" />
              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
           </div>
         ) : (
