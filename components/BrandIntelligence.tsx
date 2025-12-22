@@ -178,7 +178,14 @@ Be concise.`,
   };
 
   const addReferenceDoc = (label: string, nextContext: BrandContext) => {
-    const next = Array.from(new Set([...nextContext.referenceDocNames, label]));
+    // Smart-filter: If adding a Logo or Lead Magnet, remove previous ones to keep context clean
+    let nextList = nextContext.referenceDocNames;
+    if (label.startsWith('Logo:')) {
+       nextList = nextList.filter(n => !n.startsWith('Logo:'));
+    } else if (label.startsWith('Lead Magnet:')) {
+       nextList = nextList.filter(n => !n.startsWith('Lead Magnet:'));
+    }
+    const next = Array.from(new Set([...nextList, label]));
     onChange({ ...nextContext, referenceDocNames: next });
   };
 
@@ -392,12 +399,32 @@ Be concise.`,
                 <div className="animate-fade-in pt-8 border-t border-slate-100">
                   {context.referenceDocNames.length > 0 && (
                     <>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Loaded Assets:</p>
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Context Sources</p>
+                        <button 
+                          onClick={() => onChange({ ...context, referenceDocNames: [] })}
+                          className="text-[10px] font-bold text-slate-300 uppercase hover:text-red-500 transition-colors"
+                        >
+                          Clear History
+                        </button>
+                      </div>
                       <div className="space-y-2">
                         {context.referenceDocNames.map((n, i) => (
-                          <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span className="truncate">{n}</span>
+                          <div key={i} className="flex items-center justify-between text-sm font-bold text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100 group hover:border-blue-200 transition-all">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <div className={`w-2 h-2 rounded-full ${n.toLowerCase().includes('logo') ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
+                              <span className="truncate">{n}</span>
+                            </div>
+                            <button 
+                              onClick={() => {
+                                const next = context.referenceDocNames.filter((_, idx) => idx !== i);
+                                onChange({ ...context, referenceDocNames: next });
+                              }}
+                              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"
+                              title="Remove from context"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                           </div>
                         ))}
                       </div>

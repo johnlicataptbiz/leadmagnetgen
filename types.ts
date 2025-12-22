@@ -35,6 +35,39 @@ export interface HubspotAnalysis {
   strategicSuggestions: LeadMagnetIdea[];
 }
 
+export type SmartChartType = 'bar' | 'line' | 'table';
+
+export interface SmartChartSeries {
+  name: string;
+  points: Array<{ x: string; y: number }>;
+}
+
+export interface SmartChart {
+  type: SmartChartType;
+  title: string;
+  xLabel?: string;
+  yLabel?: string;
+  series?: SmartChartSeries[];
+  columns?: string[];
+  rows?: string[][];
+  note?: string;
+}
+
+export interface SmartKpi {
+  label: string;
+  value: string;
+  note?: string;
+}
+
+export interface SmartMarketReport {
+  title: string;
+  summary: string;
+  kpis: SmartKpi[];
+  insights: string[];
+  charts: SmartChart[];
+  cautions?: string[];
+}
+
 export interface BrandColors {
   primary: string;
   secondary: string;

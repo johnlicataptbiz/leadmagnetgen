@@ -1,6 +1,23 @@
 
 import { PT_BIZ_SYSTEM_INSTRUCTION, SUGGESTION_PROMPT, CONTENT_PROMPT } from "../constants";
-import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext } from "../types";
+import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext, SmartMarketReport } from "../types";
+
+const marketReportToPrompt = (report?: SmartMarketReport | null) => {
+  if (!report) return "";
+  const kpis = (report.kpis || []).slice(0, 8).map(k => `- ${k.label}: ${k.value}${k.note ? ` (${k.note})` : ""}`).join("\n");
+  const insights = (report.insights || []).slice(0, 10).map(i => `- ${i}`).join("\n");
+  const cautions = (report.cautions || []).slice(0, 8).map(c => `- ${c}`).join("\n");
+
+  return `Market Intelligence (auto-generated dashboard):
+Title: ${report.title}
+Summary: ${report.summary}
+KPIs:
+${kpis || "- (none)"}
+Insights:
+${insights || "- (none)"}
+Cautions:
+${cautions || "- (none)"}`;
+};
 
 /**
  * PROXY MODE: Securely call Vercel Backend
@@ -88,9 +105,10 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
   }
 };
 
-export const getLeadMagnetSuggestions = async (topic: string, brandContext?: BrandContext): Promise<LeadMagnetIdea[]> => {
+export const getLeadMagnetSuggestions = async (topic: string, brandContext?: BrandContext, marketReport?: SmartMarketReport | null): Promise<LeadMagnetIdea[]> => {
   const brandPrompt = brandContext ? `Tone: ${brandContext.tonality}\nStyle: ${brandContext.styling}` : "";
-  const fullPrompt = `${SUGGESTION_PROMPT(topic)}\n\n${brandPrompt}`;
+  const marketPrompt = marketReportToPrompt(marketReport);
+  const fullPrompt = `${SUGGESTION_PROMPT(topic)}\n\n${brandPrompt}\n\n${marketPrompt}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
@@ -120,14 +138,15 @@ export const getLeadMagnetSuggestions = async (topic: string, brandContext?: Bra
   }
 };
 
-export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitles: string[], brandContext?: BrandContext): Promise<LeadMagnetIdea | null> => {
+export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitles: string[], brandContext?: BrandContext, marketReport?: SmartMarketReport | null): Promise<LeadMagnetIdea | null> => {
   const brandPrompt = brandContext
     ? `Tone: ${brandContext.tonality}\nStyle: ${brandContext.styling}\nNotes: ${brandContext.styleNotes}`
     : "";
+  const marketPrompt = marketReportToPrompt(marketReport);
   const exclusions = existingTitles.length
     ? `Avoid titles that are similar to: ${existingTitles.join('; ')}.`
     : "";
-  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}".\n${exclusions}\n${brandPrompt}\nReturn a fresh angle that does not overlap with the excluded titles.`;
+  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}".\n${exclusions}\n${brandPrompt}\n\n${marketPrompt}\nReturn a fresh angle that does not overlap with the excluded titles and uses market data when relevant.`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
@@ -154,11 +173,12 @@ export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitle
   }
 };
 
-export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandContext?: BrandContext): Promise<LeadMagnetContent | null> => {
+export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandContext?: BrandContext, marketReport?: SmartMarketReport | null): Promise<LeadMagnetContent | null> => {
   const brandPrompt = brandContext
     ? `Brand Context:\nTone: ${brandContext.tonality}\nStyle: ${brandContext.styling}\nNotes: ${brandContext.styleNotes}`
     : "";
-  const fullPrompt = `${CONTENT_PROMPT(idea)}\n\n${brandPrompt}`;
+  const marketPrompt = marketReportToPrompt(marketReport);
+  const fullPrompt = `${CONTENT_PROMPT(idea)}\n\n${brandPrompt}\n\n${marketPrompt}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
@@ -237,6 +257,121 @@ export const analyzeHubspotData = async (rawContent: string, brandContext?: Bran
   } catch (e) {
     console.error("Failed to analyze HubSpot data", e);
     const message = e instanceof Error ? e.message : "Failed to analyze HubSpot data";
+    throw new Error(message);
+  }
+};
+
+export const generateSmartMarketReport = async (
+  reports: Array<{
+    name: string;
+    headers: string[];
+    rowCount: number;
+    sampleCsv: string;
+    numericColumnStats?: Record<string, { sum: number; max: number; min: number }>;
+  }>,
+  brandContext?: BrandContext
+): Promise<SmartMarketReport | null> => {
+  const brandPrompt = brandContext
+    ? `Brand Context:\nTone: ${brandContext.tonality}\nStyle: ${brandContext.styling}\nNotes: ${brandContext.styleNotes}`
+    : "";
+
+  const prompt = `You are a data analyst for a marketing team. You will receive multiple HubSpot CSV exports (different schemas).
+Your job: produce ONE unified "Smart Market Report" that cross-references all reports and suggests clear dashboard visuals.
+
+Rules:
+- Infer what each report represents from column names (pages/campaigns/forms/sources/etc).
+- Cross-reference reports when possible (e.g., same URL/title/campaign appearing in multiple exports).
+- Prefer actionable insights for marketing decisions.
+- If data is incomplete/ambiguous, call it out in cautions and avoid overconfident numbers.
+- Output charts with small, readable datasets (top 5–10 items, or 30-day trend points).
+
+DATA (each report includes headers + a CSV sample):
+${reports
+  .map((r, idx) => {
+    const stats = r.numericColumnStats
+      ? `Numeric stats (sum/min/max): ${JSON.stringify(r.numericColumnStats)}`
+      : "";
+    return `\n--- REPORT ${idx + 1}: ${r.name} ---\nRowCount: ${r.rowCount}\nHeaders: ${r.headers.join(
+      " | "
+    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 50000)}`;
+  })
+  .join("\n")}
+
+${brandPrompt}
+`;
+
+  const payload = {
+    systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
+    prompt,
+    responseSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        summary: { type: "string" },
+        kpis: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              value: { type: "string" },
+              note: { type: "string" }
+            },
+            required: ["label", "value"]
+          }
+        },
+        insights: { type: "array", items: { type: "string" } },
+        charts: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string" },
+              title: { type: "string" },
+              xLabel: { type: "string" },
+              yLabel: { type: "string" },
+              note: { type: "string" },
+              series: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    points: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          x: { type: "string" },
+                          y: { type: "number" }
+                        },
+                        required: ["x", "y"]
+                      }
+                    }
+                  },
+                  required: ["name", "points"]
+                }
+              },
+              columns: { type: "array", items: { type: "string" } },
+              rows: {
+                type: "array",
+                items: { type: "array", items: { type: "string" } }
+              }
+            },
+            required: ["type", "title"]
+          }
+        },
+        cautions: { type: "array", items: { type: "string" } }
+      },
+      required: ["title", "summary", "kpis", "insights", "charts"]
+    }
+  };
+
+  try {
+    return await callAIProxy("text", payload);
+  } catch (e) {
+    console.error("Failed to generate smart market report", e);
+    const message = e instanceof Error ? e.message : "Failed to generate smart market report";
     throw new Error(message);
   }
 };

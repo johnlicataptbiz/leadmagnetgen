@@ -1,17 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppStep, LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext, ArchiveItem } from './types';
+import { AppStep, LeadMagnetIdea, LeadMagnetContent, BrandContext, ArchiveItem, SmartMarketReport } from './types';
 import { getLeadMagnetSuggestions, generateLeadMagnetContent, getSingleLeadMagnetSuggestion } from './services/geminiService';
 import Header from './components/Header';
 import TopicForm from './components/TopicForm';
 import SuggestionList from './components/SuggestionList';
 import LeadMagnetPreview from './components/LeadMagnetPreview';
-import HubspotInsights from './components/HubspotInsights';
+// import HubspotInsights from './components/HubspotInsights';
 import BrandIntelligence from './components/BrandIntelligence';
 import MemoryBank from './components/MemoryBank';
 
 const BRAND_STORAGE_KEY = 'pt_biz_brand_context';
 const ARCHIVE_STORAGE_KEY = 'pt_biz_memory_bank';
+const MARKET_REPORT_STORAGE_KEY = 'pt_biz_smart_market_report';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<AppStep>('input');
@@ -19,7 +20,17 @@ const App: React.FC = () => {
   const [suggestions, setSuggestions] = useState<LeadMagnetIdea[]>([]);
   const [selectedIdea, setSelectedIdea] = useState<LeadMagnetIdea | null>(null);
   const [content, setContent] = useState<LeadMagnetContent | null>(null);
-  const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(null);
+  const [marketReport, setMarketReport] = useState<SmartMarketReport | null>(() => {
+    const saved = localStorage.getItem(MARKET_REPORT_STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse saved market report", e);
+      }
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -67,6 +78,10 @@ const App: React.FC = () => {
     localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(archive));
   }, [archive]);
 
+  useEffect(() => {
+    localStorage.setItem(MARKET_REPORT_STORAGE_KEY, JSON.stringify(marketReport));
+  }, [marketReport]);
+
   const handleTopicSubmit = async (val: string) => {
     setTopic(val);
     setIsLoading(true);
@@ -74,7 +89,7 @@ const App: React.FC = () => {
     setStep('suggestions');
     setErrorMessage(null);
     try {
-      const ideas = await getLeadMagnetSuggestions(val, brandContext);
+      const ideas = await getLeadMagnetSuggestions(val, brandContext, marketReport);
       setSuggestions(ideas);
     } catch (error: any) {
       console.error(error);
@@ -88,7 +103,7 @@ const App: React.FC = () => {
     const existingTitles = suggestions.map(s => s.title);
     setErrorMessage(null);
     try {
-      const newIdea = await getSingleLeadMagnetSuggestion(topic, existingTitles, brandContext);
+      const newIdea = await getSingleLeadMagnetSuggestion(topic, existingTitles, brandContext, marketReport);
       if (newIdea) {
         setSuggestions(prev => prev.map(s => s.id === ideaId ? newIdea : s));
       }
@@ -119,7 +134,7 @@ const App: React.FC = () => {
     }, 2500);
 
     try {
-      const fullContent = await generateLeadMagnetContent(idea, brandContext);
+      const fullContent = await generateLeadMagnetContent(idea, brandContext, marketReport);
       clearInterval(interval);
       if (fullContent) {
         setContent(fullContent);
@@ -151,11 +166,6 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleInsightsAnalysis = (data: HubspotAnalysis) => {
-    setAnalysis(data);
-    setStep('insights');
   };
 
   const handleExportPDF = async () => {
@@ -203,7 +213,6 @@ const App: React.FC = () => {
     setSuggestions([]);
     setSelectedIdea(null);
     setContent(null);
-    setAnalysis(null);
     setErrorMessage(null);
     setLeadForm({ name: '', email: '', practice: '', consent: false });
     setLeadStatus('idle');
@@ -351,12 +360,14 @@ const App: React.FC = () => {
                   <h2 className="text-3xl font-black text-slate-900 heading-font uppercase">Market Insights</h2>
                   <button onClick={() => setStep('input')} className="font-bold uppercase text-xs" style={{ color: brandContext.colors.secondary }}>← Back</button>
                 </div>
-                <HubspotInsights 
-                  brandContext={brandContext}
-                  analysis={analysis}
-                  onAnalysisComplete={handleInsightsAnalysis} 
-                  onSelectIdea={handleSelectIdea}
-                />
+                <div className="text-center p-12 text-slate-500">
+                  <p>Market Insights are currently undergoing maintenance.</p>
+                  {/* <HubspotInsights 
+                    brandContext={brandContext}
+                    report={marketReport}
+                    onReportChange={setMarketReport}
+                  /> */}
+                </div>
               </div>
             )}
 
