@@ -354,6 +354,7 @@ const App: React.FC = () => {
                 </div>
                 <HubspotInsights 
                   brandContext={brandContext}
+                  analysis={analysis}
                   onAnalysisComplete={handleInsightsAnalysis} 
                   onSelectIdea={handleSelectIdea}
                 />

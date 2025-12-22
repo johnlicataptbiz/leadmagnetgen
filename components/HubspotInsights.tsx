@@ -1,20 +1,27 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { HubspotAnalysis, LeadMagnetIdea, BrandContext } from '../types';
 import { analyzeHubspotData } from '../services/geminiService';
 
 interface HubspotInsightsProps {
   brandContext?: BrandContext;
+  analysis?: HubspotAnalysis | null;
   onAnalysisComplete: (analysis: HubspotAnalysis) => void;
   onSelectIdea: (idea: LeadMagnetIdea) => void;
 }
 
-const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, onAnalysisComplete, onSelectIdea }) => {
+const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysis: initialAnalysis, onAnalysisComplete, onSelectIdea }) => {
   const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(null);
+  const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(initialAnalysis || null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (initialAnalysis) {
+      setAnalysis(initialAnalysis);
+    }
+  }, [initialAnalysis]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,9 +135,49 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, onAnaly
                 <p className="text-slate-300 leading-relaxed italic">"{analysis.summary}"</p>
               </div>
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">Performance Mix</h4>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      <span>Working</span>
+                      <span>{analysis.whatIsWorking.length}</span>
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full bg-green-500"
+                        style={{ width: `${Math.min(100, (analysis.whatIsWorking.length / Math.max(1, analysis.whatIsWorking.length + analysis.whatIsNotWorking.length)) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      <span>Needs Work</span>
+                      <span>{analysis.whatIsNotWorking.length}</span>
+                    </div>
+                    <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full bg-red-400"
+                        style={{ width: `${Math.min(100, (analysis.whatIsNotWorking.length / Math.max(1, analysis.whatIsWorking.length + analysis.whatIsNotWorking.length)) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Ratio is based on extracted insights from the CSV. Upload a larger range to improve accuracy.
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">Winning Themes</h4>
                 <ul className="mt-4 space-y-3">
                   {analysis.whatIsWorking.map((w, i) => (
+                    <li key={i} className="text-sm text-slate-700 font-medium">● {w}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2">Friction Points</h4>
+                <ul className="mt-4 space-y-3">
+                  {analysis.whatIsNotWorking.map((w, i) => (
                     <li key={i} className="text-sm text-slate-700 font-medium">● {w}</li>
                   ))}
                 </ul>
@@ -141,6 +188,19 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, onAnaly
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-black heading-font text-slate-900 uppercase">Strategic Ideas</h3>
                 <button onClick={() => { setAnalysis(null); setFileName(null); }} className="text-blue-600 text-xs font-bold uppercase hover:underline">New Report</button>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">Report Snapshot</h4>
+                <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-slate-700">
+                  <div className="bg-white rounded-xl p-4 border border-slate-100">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400">Themes Identified</p>
+                    <p className="mt-2 text-2xl font-black heading-font text-slate-900">{analysis.whatIsWorking.length + analysis.whatIsNotWorking.length}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 border border-slate-100">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-400">Ideas Generated</p>
+                    <p className="mt-2 text-2xl font-black heading-font text-slate-900">{analysis.strategicSuggestions.length}</p>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {analysis.strategicSuggestions.map((suggestion) => (
