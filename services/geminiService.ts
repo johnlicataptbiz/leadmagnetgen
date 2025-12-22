@@ -103,11 +103,7 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
     return await callAIProxy(action, payload);
   } catch (e) {
     console.error("AI Analysis Failed", e);
-    return {
-      tonality: "Analysis unavailable.",
-      styling: "Analysis unavailable.",
-      styleNotes: "Error communicating with AI engine."
-    };
+    throw e;
   }
 };
 

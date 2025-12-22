@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { BrandContext } from '../types';
+import { analyzeStyleReference } from '../services/geminiService';
 // @ts-ignore
 import ColorThief from 'colorthief';
 
@@ -13,6 +14,7 @@ const loadPdfjs = async () => {
   }
   const mod = await pdfjsModulePromise;
   if (!pdfWorkerSrc) {
+    // @ts-ignore
     const workerMod = await import('pdfjs-dist/build/pdf.worker?url');
     pdfWorkerSrc = workerMod.default || workerMod;
   }
@@ -146,35 +148,9 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
     });
   };
 
-  const analyzePDF = async (file: File): Promise<{tonality: string, styling: string, styleNotes: string}> => {
+  const analyzePDF = async (file: File): Promise<Partial<BrandContext>> => {
     const text = await extractPdfText(file);
-    const sample = text.substring(0, 10000);
-    const response = await fetch('/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'text',
-        payload: {
-          prompt: `Analyze this lead magnet context. Extract brand voice/tone, visual style guide, and any inferred color palette hints (e.g. "uses blue and orange").\n\n${sample}`,
-          systemInstruction: `Extract: 
-1. Tonality (voice/tone), 
-2. Styling (formatting patterns), 
-3. Style Notes (unique characteristics + any color hints found in text). 
-Be concise.`,
-          responseSchema: {
-            type: 'object',
-            properties: {
-              tonality: { type: 'string' },
-              styling: { type: 'string' },
-              styleNotes: { type: 'string' }
-            }
-          }
-        }
-      })
-    });
-
-    if (!response.ok) throw new Error('AI analysis failed');
-    return await response.json();
+    return await analyzeStyleReference(text, file.name, context.logoUrl);
   };
 
   const addReferenceDoc = (label: string, nextContext: BrandContext) => {
@@ -238,9 +214,11 @@ Be concise.`,
             setTimeout(() => {
                 const nextContext = {
                   ...context,
-                  tonality: analysis.tonality,
-                  styling: analysis.styling,
-                  styleNotes: analysis.styleNotes
+                  tonality: analysis.tonality || context.tonality,
+                  styling: analysis.styling || context.styling,
+                  styleNotes: analysis.styleNotes || context.styleNotes,
+                  // If AI extracted better colors, use them
+                  colors: analysis.colors || context.colors
                 };
                 addReferenceDoc(`Lead Magnet: ${file.name}`, nextContext);
                 setProcessingState({ type: null, progress: 0 });
@@ -248,7 +226,7 @@ Be concise.`,
         } catch (err) {
             clearInterval(interval);
             console.error(err);
-            setErrorMessage("PDF analysis failed. Please try again.");
+            setErrorMessage(err instanceof Error ? err.message : "PDF analysis failed. Please try again.");
             setProcessingState({ type: null, progress: 0 });
         }
     }
@@ -279,6 +257,7 @@ Be concise.`,
           <button
             onClick={() => setErrorMessage(null)}
             className="text-red-600 font-bold uppercase text-[10px] tracking-widest"
+            title="Dismiss error message"
           >
             Dismiss
           </button>
@@ -330,9 +309,13 @@ Be concise.`,
                 className={`border-4 border-dashed rounded-[2rem] p-12 text-center cursor-pointer transition-all ${isProcessing && processingState.type === 'logo' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50 relative overflow-hidden'}`}
               >
                 {isProcessing && processingState.type === 'logo' ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 brand-progress-container">
+                     <style>{`
+                        .brand-progress-container { --progress: ${processingState.progress}%; }
+                        .brand-progress-bar { width: var(--progress); }
+                     `}</style>
                      <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 transition-all duration-300 ease-out" style={{ width: `${processingState.progress}%` }}></div>
+                        <div className="h-full bg-blue-600 transition-all duration-300 ease-out brand-progress-bar"></div>
                      </div>
                      <p className="font-bold text-blue-600 uppercase text-xs tracking-widest">Analyzing Logo... {Math.round(processingState.progress)}%</p>
                   </div>
@@ -358,8 +341,12 @@ Be concise.`,
                 onClick={() => !isProcessing && pdfInputRef.current?.click()}
                 className={`border-4 border-dashed rounded-[2rem] p-8 text-center cursor-pointer transition-all ${isProcessing && processingState.type === 'pdf' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50'}`}
               >
-                 {isProcessing && processingState.type === 'pdf' ? (
-                    <div className="space-y-4">
+                  {isProcessing && processingState.type === 'pdf' ? (
+                    <div className="space-y-4 brand-progress-container">
+                      <style>{`
+                        .brand-progress-container { --progress: ${processingState.progress}%; }
+                        .brand-progress-bar { width: var(--progress); }
+                      `}</style>
                       {isPdfEngineLoading && (
                         <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                           <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
@@ -367,9 +354,9 @@ Be concise.`,
                         </div>
                       )}
                        <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-600 transition-all duration-300 ease-out" style={{ width: `${processingState.progress}%` }}></div>
-                       </div>
-                       <p className="font-bold text-blue-600 uppercase text-xs tracking-widest">Scanning Document... {Math.round(processingState.progress)}%</p>
+                           <div className="h-full bg-blue-600 transition-all duration-300 ease-out brand-progress-bar"></div>
+                        </div>
+                        <p className="font-bold text-blue-600 uppercase text-xs tracking-widest">Scanning Document... {Math.round(processingState.progress)}%</p>
                     </div>
                  ) : (
                      <div className="space-y-3">

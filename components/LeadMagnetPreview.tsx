@@ -16,9 +16,32 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
       
       {/* Cover Page */}
       <div 
-        className="cover-page relative flex flex-col justify-center items-center text-center px-16 py-24 overflow-hidden"
-        style={{ backgroundColor: colors.primary }}
+        className="cover-page-container relative flex flex-col justify-center items-center text-center px-16 py-24 overflow-hidden bg-[var(--primary-color)]"
       >
+        <style>{`
+          .cover-page-container {
+            --primary-color: ${colors.primary}; 
+            --secondary-color: ${colors.secondary}; 
+            --accent-color: ${colors.accent};
+          }
+          .cover-accent-secondary { background-color: var(--secondary-color); }
+          .cover-accent-accent { background-color: var(--accent-color); }
+          .cover-button { background-color: var(--secondary-color); color: white; }
+          .cover-logo-mark { border-bottom-color: var(--secondary-color); }
+          .cover-logo-accent { color: var(--secondary-color); }
+          .cover-title-line { background-color: var(--secondary-color); }
+          .strategy-tag { color: var(--secondary-color); }
+          .checklist-container { border-left-color: var(--secondary-color); }
+          .checklist-icon { border-color: var(--secondary-color); color: var(--secondary-color); }
+          .step-number { background-color: var(--secondary-color); }
+          .worksheet-header { background-color: var(--secondary-color); }
+          .worksheet-type { color: var(--secondary-color); }
+          .qa-answer-tag { background-color: var(--secondary-color); }
+          .case-study-accent { background-color: var(--secondary-color); }
+          .rounded-blob { border-radius: 40% 60% 70% 30% / 40% 50% 60% 70%; }
+          .cta-box { background-color: var(--secondary-color); }
+          .cta-link { color: var(--secondary-color); }
+        `}</style>
         {/* Modern Shimmer & Glow */}
         <div className="shimmer-active absolute inset-0 opacity-10 pointer-events-none"></div>
         
@@ -29,8 +52,8 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
           </div>
         ) : (
           <>
-            <div className="absolute top-1/4 left-1/4 cover-accent-circles rounded-full blur-[180px] opacity-30 animate-pulse" style={{ backgroundColor: colors.secondary }}></div>
-            <div className="absolute bottom-1/4 right-1/4 cover-accent-circles rounded-full blur-[180px] opacity-20" style={{ backgroundColor: colors.accent }}></div>
+            <div className="absolute top-1/4 left-1/4 cover-accent-circles rounded-full blur-[180px] opacity-30 animate-pulse cover-accent-secondary"></div>
+            <div className="absolute bottom-1/4 right-1/4 cover-accent-circles rounded-full blur-[180px] opacity-20 cover-accent-accent"></div>
           </>
         )}
         <div className="absolute inset-0 opacity-[0.05] pointer-events-none grid-overlay"></div>
@@ -40,9 +63,9 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
           {logoUrl ? (
             <img src={logoUrl} className="h-32 object-contain" alt="Brand Logo" />
           ) : (
-            <div className="inline-block pb-4 px-2 letter-mark" style={{ borderBottomColor: colors.secondary }}>
+            <div className="inline-block pb-4 px-2 letter-mark cover-logo-mark">
                <span className="text-7xl font-black italic tracking-tighter heading-font text-white">
-                PT<span style={{ color: colors.secondary }}>BIZ</span>
+                PT<span className="cover-logo-accent">BIZ</span>
               </span>
             </div>
           )}
@@ -54,7 +77,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
             {content.title}
           </h1>
           
-          <div className="w-24 h-2 mb-12 rounded-full" style={{ backgroundColor: colors.secondary }}></div>
+          <div className="w-24 h-2 mb-12 rounded-full cover-title-line"></div>
           
           <p className="text-xl md:text-2xl text-slate-300 font-medium max-w-xl heading-font uppercase tracking-[0.3em] leading-relaxed opacity-90">
             {content.subtitle}
@@ -73,7 +96,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
         {/* Introduction Section */}
         <section className="relative">
           <div className="flex items-center gap-4 mb-10">
-            <div className="w-2 h-10 rounded-full" style={{ backgroundColor: colors.secondary }}></div>
+            <div className="w-2 h-10 rounded-full cover-accent-secondary"></div>
             <h2 className="text-4xl font-black text-slate-900 heading-font uppercase tracking-tight">
               Executive Brief
             </h2>
@@ -87,7 +110,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
         {content.sections.map((section, idx) => (
           <section key={idx} className="relative group">
             <div className="flex items-baseline gap-4 mb-10">
-               <span className="text-xs font-black uppercase tracking-[0.5em] opacity-30 heading-font" style={{ color: colors.secondary }}>STRATEGY 0{idx + 1}</span>
+               <span className="text-xs font-black uppercase tracking-[0.5em] opacity-30 heading-font strategy-tag">STRATEGY 0{idx + 1}</span>
                <h3 className="text-3xl md:text-4xl font-black text-slate-900 heading-font uppercase tracking-tight leading-none">
                  {section.heading}
                </h3>
@@ -100,13 +123,13 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
             )}
 
             {section.type === 'checklist' && (
-              <div className="bg-slate-50 border-l-8 p-12 rounded-r-3xl border-slate-200" style={{ borderLeftColor: colors.secondary }}>
+              <div className="bg-slate-50 border-l-8 p-12 rounded-r-3xl checklist-container">
                 <p className="mb-8 font-black text-slate-900 text-xl uppercase tracking-wider heading-font">{section.content}</p>
                 <div className="grid grid-cols-1 gap-6">
                   {section.items?.map((item, i) => (
                     <div key={i} className="flex items-start gap-5 group/item">
-                      <div className="w-6 h-6 rounded-md border-2 flex-shrink-0 mt-1 flex items-center justify-center transition-colors group-hover/item:bg-white" style={{ borderColor: colors.secondary }}>
-                         <svg className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity" style={{ color: colors.secondary }} fill="currentColor" viewBox="0 0 20 20">
+                      <div className="w-6 h-6 rounded-md border-2 flex-shrink-0 mt-1 flex items-center justify-center transition-colors group-hover/item:bg-white checklist-icon">
+                         <svg className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 20 20">
                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                          </svg>
                       </div>
@@ -125,8 +148,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
                       <div className="absolute left-7 top-14 bottom-[-64px] w-0.5 bg-slate-100"></div>
                     )}
                     <div 
-                      className="w-14 h-14 text-white rounded-2xl flex items-center justify-center font-black text-2xl flex-shrink-0 heading-font shadow-xl transform transition-transform group-hover:scale-110"
-                      style={{ backgroundColor: colors.secondary }}
+                      className="w-14 h-14 text-white rounded-2xl flex items-center justify-center font-black text-2xl flex-shrink-0 heading-font shadow-xl transform transition-transform group-hover:scale-110 step-number"
                     >
                       {i + 1}
                     </div>
@@ -142,9 +164,9 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
 
             {section.type === 'worksheet' && (
               <div className="bg-white border-2 border-slate-100 p-12 implementation-module shadow-2xl relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-full h-3" style={{ backgroundColor: colors.secondary }}></div>
+                 <div className="absolute top-0 left-0 w-full h-3 worksheet-header"></div>
                  <div className="flex justify-between items-center mb-10">
-                    <h4 className="font-black uppercase text-xs tracking-[0.3em] heading-font" style={{ color: colors.secondary }}>Implementation Module</h4>
+                    <h4 className="font-black uppercase text-xs tracking-[0.3em] heading-font worksheet-type">Implementation Module</h4>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Self-Audit</div>
                  </div>
                  <p className="text-2xl text-slate-900 mb-12 font-black leading-tight heading-font uppercase">{section.content}</p>
@@ -161,17 +183,16 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
 
             {section.type === 'box' && (
               <div 
-                className="text-white p-14 strategic-pivot-box shadow-2xl relative overflow-hidden group/box"
-                style={{ backgroundColor: colors.primary }}
+                className="text-white p-14 strategic-pivot-box shadow-2xl relative overflow-hidden group/box box-primary-bg"
               >
-                <div className="absolute top-0 right-0 w-48 h-48 opacity-10 transform translate-x-12 -translate-y-12 rotate-45" style={{ backgroundColor: colors.accent }}></div>
+                <div className="absolute top-0 right-0 w-48 h-48 opacity-10 transform translate-x-12 -translate-y-12 rotate-45 box-accent-bg"></div>
                 <div className="flex items-center gap-4 mb-8">
                    <div className="p-3 rounded-xl bg-white/10">
-                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: colors.accent }}>
+                     <svg className="w-8 h-8 box-accent-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />
                      </svg>
                    </div>
-                   <p className="text-2xl font-black uppercase heading-font tracking-widest" style={{ color: colors.accent }}>Strategic Pivot</p>
+                   <p className="text-2xl font-black uppercase heading-font tracking-widest box-accent-text">Strategic Pivot</p>
                 </div>
                 <p className="text-2xl text-white leading-relaxed font-medium italic">
                   "{section.content}"
@@ -196,8 +217,8 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
                           <span className="font-black text-[10px] uppercase px-2 py-1 rounded bg-slate-900 text-white mt-1 heading-font">Q</span>
                           <p className="font-black text-slate-900 text-2xl heading-font uppercase tracking-tight leading-tight">{q}{q && '?'}</p>
                         </div>
-                        <div className="flex items-start gap-5">
-                          <span className="font-black text-[10px] uppercase px-2 py-1 rounded text-white mt-1 heading-font" style={{ backgroundColor: colors.secondary }}>A</span>
+                         <div className="flex items-start gap-5">
+                          <span className="font-black text-[10px] uppercase px-2 py-1 rounded text-white mt-1 heading-font qa-answer-tag">A</span>
                           <p className="text-lg text-slate-600 leading-relaxed font-medium">{a || 'Speak with a PT Biz specialist to unpack the specific variables of this metric.'}</p>
                         </div>
                       </div>
@@ -208,18 +229,17 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
             )}
 
             {section.type === 'case_study' && (
-              <div 
-                className="p-14 case-study-box border-2 relative overflow-hidden shadow-xl"
-                style={{ backgroundColor: `${colors.secondary}05`, borderColor: `${colors.secondary}15` }}
-              >
-                <div className="absolute top-[-40px] left-[-40px] w-64 h-64 opacity-5" style={{ backgroundColor: colors.secondary, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 70%' }}></div>
-                
-                <div className="flex items-center justify-between mb-10">
-                   <h4 className="font-black uppercase text-xs tracking-[0.4em] heading-font" style={{ color: colors.secondary }}>Real World Data</h4>
-                   <svg className="w-12 h-12 opacity-20" fill="currentColor" viewBox="0 0 24 24" style={{ color: colors.secondary }}>
-                      <path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017V14H17.017C15.9124 14 15.017 13.1046 15.017 12V9C15.017 7.89543 15.9124 7 17.017 7H20.017V10H18.017C17.4647 10 17.017 10.4477 17.017 11V12H20.017C21.1216 12 22.017 12.8954 22.017 14V21H14.017ZM3.01709 21L3.01709 18C3.01709 16.8954 3.91252 16 5.01709 16H8.01709V14H6.01709C4.91252 14 4.01709 13.1046 4.01709 12V9C4.01709 7.89543 4.91252 7 6.01709 7H9.01709V10H7.01709C6.4648 10 6.01709 10.4477 6.01709 11V12H9.01709C10.1217 12 11.0171 12.8954 11.0171 14V21H3.01709Z" />
-                   </svg>
-                </div>
+               <div 
+                 className="p-14 case-study-box border-2 relative overflow-hidden shadow-xl bg-slate-50/50 border-slate-100"
+               >
+                 <div className="absolute top-[-40px] left-[-40px] w-64 h-64 opacity-5 case-study-accent rounded-blob"></div>
+                 
+                 <div className="flex items-center justify-between mb-10">
+                    <h4 className="font-black uppercase text-xs tracking-[0.4em] heading-font worksheet-type">Real World Data</h4>
+                    <svg className="w-12 h-12 opacity-20 worksheet-type" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017V14H17.017C15.9124 14 15.017 13.1046 15.017 12V9C15.017 7.89543 15.9124 7 17.017 7H20.017V10H18.017C17.4647 10 17.017 10.4477 17.017 11V12H20.017C21.1216 12 22.017 12.8954 22.017 14V21H14.017ZM3.01709 21L3.01709 18C3.01709 16.8954 3.91252 16 5.01709 16H8.01709V14H6.01709C4.91252 14 4.01709 13.1046 4.01709 12V9C4.01709 7.89543 4.91252 7 6.01709 7H9.01709V10H7.01709C6.4648 10 6.01709 10.4477 6.01709 11V12H9.01709C10.1217 12 11.0171 12.8954 11.0171 14V21H3.01709Z" />
+                    </svg>
+                 </div>
                 
                 <p className="text-3xl font-black text-slate-900 mb-8 leading-tight heading-font uppercase tracking-tight">{section.heading}</p>
                 <div className="text-xl text-slate-700 leading-[1.8] italic font-normal opacity-90 border-l-4 pl-10 border-slate-200">
@@ -244,8 +264,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
 
         {/* CTA Section - The Hard Offer */}
         <section 
-          className="cta-section p-20 text-center text-white space-y-12 no-break-inside shadow-3xl relative overflow-hidden"
-          style={{ backgroundColor: colors.secondary }}
+          className="cta-section p-20 text-center text-white space-y-12 no-break-inside shadow-3xl relative overflow-hidden cta-box"
         >
           {/* Subtle Accent Circles */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full -mr-40 -mt-40 blur-3xl"></div>
@@ -268,8 +287,8 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
               href="https://meetings.hubspot.com/pt-biz/discovery-call-jack"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-white px-16 py-7 rounded-3xl text-2xl font-black heading-font uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 inline-block no-underline" 
-              style={{ color: colors.secondary }}
+              className="bg-white px-16 py-7 rounded-3xl text-2xl font-black heading-font uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 inline-block no-underline cta-link" 
+              title="Secure Your Session"
             >
               Secure My Session
             </a>
@@ -284,7 +303,7 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
                <img src={logoUrl} className="h-12 object-contain grayscale opacity-30" alt="Brand Logo" />
             ) : (
                <span className="text-4xl font-black italic tracking-tighter heading-font text-slate-900 opacity-20">
-                PT<span style={{ color: colors.secondary }}>BIZ</span>
+                PT<span className="cover-logo-accent">BIZ</span>
               </span>
             )}
             <div className="h-px w-20 bg-slate-100"></div>

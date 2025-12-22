@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { BrandContext, SmartMarketReport, SmartChart, SmartChartSeries } from '../types';
+import { BrandContext, SmartMarketReport, SmartKpi, SmartChart } from '../types';
 import { generateSmartMarketReport } from '../services/geminiService';
-import { TrendingUp, Info, AlertTriangle, FileText, Upload, Sparkles, X, Check, Loader2, ChevronRight, BarChart3, LineChart as LineChartIcon, Table as TableIcon } from 'lucide-react';
+// @ts-ignore
+import pdfWorker from 'pdfjs-dist/build/pdf.worker?url';
+import { TrendingUp, Info, AlertTriangle, FileText, Upload, Sparkles, X, Check, Loader2, ChevronRight, BarChart3, LineChart as LineChartIcon, Table as TableIcon, Plus, Copy } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   LineChart, Line, AreaChart, Area, CartesianGrid, Cell, Legend
@@ -11,6 +13,7 @@ interface HubspotInsightsProps {
   brandContext: BrandContext;
   report: SmartMarketReport | null;
   onReportChange: (report: SmartMarketReport | null) => void;
+  onClose: () => void;
 }
 
 interface UploadedFilePreview {
@@ -23,12 +26,13 @@ interface UploadedFilePreview {
   status: 'pending' | 'processing' | 'complete' | 'error';
 }
 
-const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report, onReportChange }) => {
+const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report, onReportChange, onClose }) => {
   const [uploads, setUploads] = useState<UploadedFilePreview[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState("Correlating Data...");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [copiedRecipe, setCopiedRecipe] = useState<string | null>(null);
 
   const LOADING_MESSAGES = [
     "Reading Hubspot data structures...",
@@ -42,10 +46,34 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
   ];
   
   const SUGGESTED_RECIPES = [
-    { name: 'Growth Core', icon: '🚀', files: ['Campaigns', 'Forms', 'Landing Pages'], desc: 'High-level ecosystem health.' },
-    { name: 'ROI Deep-Dive', icon: '💰', files: ['Ad Spend', 'Attribution', 'Lifecycle'], desc: 'Find where the money is.' },
-    { name: 'Funnel Optimizer', icon: '🎯', files: ['CTA Clicks', 'Raw Views', 'Submissions'], desc: 'Fix conversion bottlenecks.' }
+    { 
+      name: 'Growth Core', 
+      icon: '🚀', 
+      desc: 'High-level ecosystem health.',
+      files: ['Campaigns', 'Forms', 'Landing Pages'],
+      breezePrompt: "Analyze the correlation between my marketing campaigns, form submissions, and landing page conversion rates for the last 180 days. Show me which campaign names are driving the highest quality form completions."
+    },
+    { 
+      name: 'ROI Deep-Dive', 
+      icon: '💰', 
+      desc: 'Find where the money is.',
+      files: ['Ad Spend', 'Attribution', 'Lifecycle'],
+      breezePrompt: "Cross-reference my LinkedIn/Google Ad spend with multi-touch attribution and contact lifecycle stages. I need to know the customer acquisition cost (CAC) per campaign based on actual closed-won revenue."
+    },
+    { 
+      name: 'Funnel Optimizer', 
+      icon: '🎯', 
+      desc: 'Fix conversion bottlenecks.',
+      files: ['CTA Clicks', 'Raw Views', 'Submissions'],
+      breezePrompt: "Generate an audit of my page-level conversion funnel. Compare CTA click-through rates with raw page views and final form submission counts to identify exactly where users are dropping off."
+    }
   ];
+
+  const copyPrompt = (prompt: string, name: string) => {
+    navigator.clipboard.writeText(prompt);
+    setCopiedRecipe(name);
+    setTimeout(() => setCopiedRecipe(null), 2000);
+  };
 
   // Helper to parse CSV/text
   const processFile = async (file: File): Promise<UploadedFilePreview> => {
@@ -292,12 +320,20 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                   <h2 className="text-3xl font-black heading-font tracking-tight">{report.title}</h2>
                   <p className="text-slate-400 mt-2 max-w-2xl text-sm leading-relaxed">{report.summary}</p>
                </div>
-               <button 
-                 onClick={() => onReportChange(null)}
-                 className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase py-2 px-4 rounded-lg transition-colors border border-white/10"
-               >
-                 New Analysis
-               </button>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => onReportChange(null)}
+                    className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase py-2 px-4 rounded-lg transition-colors border border-white/10"
+                  >
+                    New Analysis
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase py-2 px-4 rounded-lg transition-colors shadow-lg shadow-blue-900/40"
+                  >
+                    Return to Studio →
+                  </button>
+                </div>
             </div>
             {/* Decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none"></div>
@@ -376,17 +412,35 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
   return (
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-200">
-         <div className="text-center mb-10">
+         <div className="text-center mb-10 relative">
+            <button 
+              onClick={onClose}
+              className="absolute left-0 top-0 text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest flex items-center gap-2"
+            >
+              ← Back
+            </button>
             <h2 className="text-2xl font-black uppercase text-slate-900 tracking-tight mb-2">Market Data Intelligence</h2>
             <p className="text-slate-500 text-xs mb-8 max-w-md mx-auto">
           Upload your exported CSVs from HubSpot (Campaigns, Forms, Landing Pages). Our AI Analyst will correlate the data into a unified dashboard. (Max 12 files)
         </p></div>
 
          {errorMessage && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold mb-6 text-center border border-red-100">
-               {errorMessage}
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 flex items-start justify-between gap-6">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+              <div>
+                <p className="font-black uppercase text-[10px] tracking-widest text-red-600">AI Error</p>
+                <p className="mt-1">{errorMessage}</p>
+              </div>
             </div>
-         )}
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="text-red-600 font-bold uppercase text-[10px] tracking-widest hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
          {/* File List */}
          {uploads.length > 0 && (
@@ -445,30 +499,32 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
          
          {/* Initial Upload State (if huge list not shown) or Main Action */}
          <div className="space-y-4">
-            <input 
-               type="file" 
-               ref={fileInputRef}
-               className="hidden"
-               multiple
-               accept=".csv,.txt"
-               onChange={handleFiles}
-            />
             
             {uploads.length === 0 ? (
-               <div 
-                 onClick={() => fileInputRef.current?.click()}
-               <div className="space-y-6">
-                 <div 
-                   onClick={() => fileInputRef.current?.click()}
-                   className="cursor-pointer bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl p-12 text-center hover:border-blue-400 hover:bg-blue-50 transition-all group"
-                 >
-                    <div className="w-16 h-16 bg-white rounded-2xl shadow-lg border border-slate-100 mx-auto flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
-                       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    </div>
-                     <h3 className="text-lg font-black text-slate-700 uppercase">Drop Report CSVs Here</h3>
-                     <p className="text-slate-400 text-sm mt-2">or click to browse multiple files</p>
-                  </div>
-                  
+                <div className="space-y-6">
+                  <div 
+                    className="cursor-pointer bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl p-12 text-center hover:border-blue-400 hover:bg-blue-50 transition-all group"
+                  >
+                    <label className="cursor-pointer block">
+                      <span className="sr-only">Upload HubSpot CSV files</span>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        multiple
+                        accept=".csv"
+                        onChange={handleFiles}
+                        className="hidden"
+                        title="Upload HubSpot CSV files"
+                      />
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 bg-white rounded-2xl shadow-lg border border-slate-100 mx-auto flex items-center justify-center text-blue-500 mb-6 group-hover:scale-110 transition-transform">
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        </div>
+                        <h3 className="text-lg font-black text-slate-700 uppercase">Drop Report CSVs Here</h3>
+                        <p className="text-slate-400 text-sm mt-2">or click to browse multiple files</p>
+                      </div>
+                    </label>
+                  </div>    
                   <div className="pt-6 border-t border-slate-100">
                      <div className="flex items-center gap-2 mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-500">
@@ -478,10 +534,19 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                      </div>
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {SUGGESTED_RECIPES.map((r, i) => (
-                          <div key={i} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl hover:border-blue-200 transition-colors group">
-                             <div className="flex items-center gap-2 mb-1">
-                                <span className="text-lg">{r.icon}</span>
-                                <span className="font-extrabold text-[11px] text-slate-800 uppercase tracking-tight">{r.name}</span>
+                          <div key={i} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl hover:border-blue-200 transition-colors group relative">
+                             <div className="flex items-center justify-between mb-1">
+                               <div className="flex items-center gap-2">
+                                  <span className="text-lg">{r.icon}</span>
+                                  <span className="font-extrabold text-[11px] text-slate-800 uppercase tracking-tight">{r.name}</span>
+                               </div>
+                               <button 
+                                 onClick={() => copyPrompt(r.breezePrompt, r.name)}
+                                 className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-slate-200 p-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 shadow-sm"
+                                 title="Copy Breeze AI Prompt"
+                               >
+                                 {copiedRecipe === r.name ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                               </button>
                              </div>
                              <p className="text-[9px] text-slate-500 mb-3 leading-tight">{r.desc}</p>
                              <div className="flex flex-wrap gap-1">
@@ -490,6 +555,11 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                                      {f}
                                   </span>
                                 ))}
+                             </div>
+                             
+                             {/* Hint Tooltip */}
+                             <div className="absolute top-[-10px] right-4 bg-slate-900 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                               Copy Breeze Prompt
                              </div>
                           </div>
                         ))}

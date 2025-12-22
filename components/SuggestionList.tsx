@@ -26,7 +26,20 @@ const SuggestionList: React.FC<SuggestionListProps> = ({ suggestions, onSelect, 
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div 
+      className="grid grid-cols-1 md:grid-cols-2 gap-6 suggestion-list-container"
+    >
+      <style>{`
+        .suggestion-list-container {
+           --primary: ${primary};
+           --secondary: ${secondary};
+        }
+        .suggestion-refresh-spinner { border-top-color: var(--secondary); }
+        .suggestion-badge { background-color: color-mix(in srgb, var(--secondary), transparent 85%); color: var(--secondary); }
+        .suggestion-check-bg { background-color: color-mix(in srgb, var(--secondary), transparent 90%); }
+        .suggestion-check-icon { color: var(--secondary); }
+        .suggestion-select-btn { background-color: var(--primary); }
+      `}</style>
       {suggestions.map((idea) => {
         const isRefreshing = refreshingId === idea.id;
         
@@ -38,8 +51,7 @@ const SuggestionList: React.FC<SuggestionListProps> = ({ suggestions, onSelect, 
             {isRefreshing && (
               <div className="absolute inset-0 bg-white/40 z-10 flex items-center justify-center backdrop-blur-sm">
                 <div 
-                  className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin" 
-                  style={{ borderTopColor: secondary }}
+                  className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin suggestion-refresh-spinner" 
                 ></div>
               </div>
             )}
@@ -49,8 +61,7 @@ const SuggestionList: React.FC<SuggestionListProps> = ({ suggestions, onSelect, 
               <div className="relative z-10">
                 <div className="flex justify-between items-start mb-6">
                   <span 
-                    className="text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-sm border border-white"
-                    style={{ backgroundColor: `${secondary}15`, color: secondary }}
+                    className="text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-[0.2em] shadow-sm border border-white suggestion-badge"
                   >
                     Idea Candidate
                   </span>
@@ -74,8 +85,8 @@ const SuggestionList: React.FC<SuggestionListProps> = ({ suggestions, onSelect, 
                   <ul className="space-y-2">
                     {idea.outline.map((item, idx) => (
                       <li key={idx} className="flex items-center text-sm text-slate-600 font-medium">
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center mr-3 flex-shrink-0" style={{ backgroundColor: `${secondary}10` }}>
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style={{ color: secondary }}>
+                       <div className="w-5 h-5 rounded-full flex items-center justify-center mr-3 flex-shrink-0 suggestion-check-bg">
+                          <svg className="w-3 h-3 suggestion-check-icon" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
@@ -93,8 +104,7 @@ const SuggestionList: React.FC<SuggestionListProps> = ({ suggestions, onSelect, 
             
             <button 
               onClick={() => onSelect(idea)}
-              className="w-full text-white py-5 font-black heading-font transition uppercase tracking-[0.2em] text-xs flex items-center justify-center space-x-3 group shine-on-hover"
-              style={{ backgroundColor: primary }}
+              className="w-full text-white py-5 font-black heading-font transition uppercase tracking-[0.2em] text-xs flex items-center justify-center space-x-3 group shine-on-hover suggestion-select-btn"
             >
               <span>Select & Generate</span>
               <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

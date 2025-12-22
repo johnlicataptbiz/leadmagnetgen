@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Select model based on action - Now featuring Nano Banana (Gemini 3)
+    // Select model based on action - Nano Banana (Gemini 3)
     const modelName = action === 'image' ? 'gemini-3-pro-image-preview' : 'gemini-3-flash-preview';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     

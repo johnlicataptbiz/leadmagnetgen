@@ -337,7 +337,15 @@ const App: React.FC = () => {
       />
       
       <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl no-print relative z-10">
-        <div className="glass-effect rounded-[3rem] p-1 shadow-2xl shadow-slate-200/50">
+        <div className="glass-effect rounded-[3rem] p-1 shadow-2xl shadow-slate-200/50 app-root">
+          <style>{`
+            .app-root { 
+              --app-secondary: ${brandContext.colors.secondary}; 
+            }
+            .dynamic-bg-secondary { background-color: var(--app-secondary); }
+            .dynamic-border-secondary { border-top-color: var(--app-secondary); }
+            .dynamic-color-secondary { color: var(--app-secondary); }
+          `}</style>
           <div className="bg-white/40 rounded-[2.8rem] backdrop-blur-sm p-4 md:p-12 min-h-[70vh]">
         {errorMessage && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700 flex items-start justify-between gap-6">
@@ -359,8 +367,7 @@ const App: React.FC = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
             <div 
-              className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin" 
-              style={{ borderTopColor: brandContext.colors.secondary }}
+              className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin dynamic-border-secondary" 
             ></div>
             <div className="text-center">
               <h2 className="text-2xl font-bold text-slate-900 heading-font">{loadingMessage}</h2>
@@ -383,23 +390,75 @@ const App: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Action A: Create New Resource</h2>
-                    <TopicForm onSubmit={handleTopicSubmit} />
-                  </div>
-                  <div className="space-y-4">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2">Action B: Market Data Analysis</h2>
-                    <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200 h-full flex flex-col justify-center text-center">
-                       <p className="text-slate-600 mb-6">Analyze your HubSpot data to determine the next strategic lead magnet needed.</p>
-                       <button 
+                <div className="max-w-4xl mx-auto">
+                  {/* Strategic Workflow Sequence */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16 relative">
+                    {/* Vertical Connector Line for Mobile, Horizontal for Desktop */}
+                    <div className="absolute top-1/2 left-0 w-full h-px bg-slate-200 hidden md:block -z-10"></div>
+                    
+                    {/* Step 1: Branding */}
+                    <div className="flex flex-col items-center text-center group">
+                      <div 
+                        onClick={() => setStep('branding')}
+                        className={`w-16 h-16 rounded-2xl flex items-center justify-center cursor-pointer transition-all border-2 mb-4 shadow-lg ${brandContext.logoUrl ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-100 text-slate-400 hover:border-blue-400 hover:text-blue-600'}`}
+                      >
+                        {brandContext.logoUrl ? (
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        ) : (
+                          <span className="text-2xl">✨</span>
+                        )}
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">Phase 01</h3>
+                      <p className="font-bold text-slate-900 text-sm">Brand DNA</p>
+                      <button 
+                        onClick={() => setStep('branding')}
+                        className="mt-3 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition"
+                      >
+                        {brandContext.logoUrl ? "Identified ✓" : "Initialize →"}
+                      </button>
+                    </div>
+
+                    {/* Step 2: Insights */}
+                    <div className="flex flex-col items-center text-center group">
+                      <div 
                         onClick={() => setStep('insights')}
-                        className="text-white py-4 rounded-lg font-bold heading-font transition flex items-center justify-center space-x-2 hover:opacity-90 shadow-lg"
-                        style={{ backgroundColor: brandContext.colors.secondary }}
-                       >
-                        <span>Analyze HubSpot Report</span>
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                       </button>
+                        className={`w-16 h-16 rounded-2xl flex items-center justify-center cursor-pointer transition-all border-2 mb-4 shadow-lg ${marketReport ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-100 text-slate-400 hover:border-blue-400 hover:text-blue-600'}`}
+                      >
+                        {marketReport ? (
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                        ) : (
+                          <span className="text-2xl">📈</span>
+                        )}
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">Phase 02</h3>
+                      <p className="font-bold text-slate-900 text-sm">Market Intelligence</p>
+                      <button 
+                        onClick={() => setStep('insights')}
+                        className="mt-3 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition"
+                      >
+                        {marketReport ? "Synced ✓" : "Load HubSpot →"}
+                      </button>
+                    </div>
+
+                    {/* Step 3: Production */}
+                    <div className="flex flex-col items-center text-center group">
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-slate-900 border-2 border-slate-800 text-white mb-4 shadow-xl shadow-blue-900/20">
+                        <span className="text-2xl">⚛️</span>
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">Phase 03</h3>
+                      <p className="font-bold text-slate-900 text-sm">Studio Core</p>
+                      <span className="mt-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Ready to Gen</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50/50 rounded-[2.5rem] p-12 border border-slate-100 shadow-inner">
+                    <div className="max-w-2xl mx-auto">
+                      <div className="flex items-center space-x-3 mb-8 justify-center">
+                         <div className="h-px w-8 bg-slate-200"></div>
+                         <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Resource Production</h2>
+                         <div className="h-px w-8 bg-slate-200"></div>
+                      </div>
+                      <TopicForm onSubmit={handleTopicSubmit} />
                     </div>
                   </div>
                 </div>
@@ -422,6 +481,7 @@ const App: React.FC = () => {
                   brandContext={brandContext}
                   report={marketReport}
                   onReportChange={setMarketReport}
+                  onClose={() => setStep('input')}
                 />
               </div>
             )}
@@ -430,7 +490,7 @@ const App: React.FC = () => {
               <div className="animate-fade-in">
                 <div className="mb-8 flex items-center justify-between">
                   <h2 className="text-3xl font-black text-slate-900 heading-font uppercase">Strategic Candidates</h2>
-                  <button onClick={reset} className="font-bold uppercase text-xs" style={{ color: brandContext.colors.secondary }}>← Start Over</button>
+                  <button onClick={reset} className="font-bold uppercase text-xs dynamic-color-secondary">← Start Over</button>
                 </div>
                 <SuggestionList 
                   topic={topic} 
@@ -449,15 +509,13 @@ const App: React.FC = () => {
                   <div className="flex gap-4">
                     <button 
                       onClick={reset}
-                      className="px-6 py-2 border-2 text-slate-700 font-bold heading-font uppercase text-xs"
-                      style={{ borderColor: '#cbd5e1' }}
+                      className="px-6 py-2 border-2 border-slate-300 text-slate-700 font-bold heading-font uppercase text-xs hover:bg-slate-50 transition-colors"
                     >
                       Close
                     </button>
-                    <button 
+                     <button 
                       onClick={handleGenerateImage}
-                      className="px-6 py-2 border-2 font-bold heading-font uppercase text-xs flex items-center gap-2 hover:bg-slate-50 transition-all"
-                      style={{ borderColor: brandContext.colors.secondary, color: brandContext.colors.secondary }}
+                      className="px-6 py-2 border-2 font-bold heading-font uppercase text-xs flex items-center gap-2 hover:bg-slate-50 transition-all border-blue-400 text-blue-600 dynamic-color-secondary dynamic-border-secondary"
                       disabled={isGeneratingImage}
                     >
                       {isGeneratingImage ? (
@@ -472,18 +530,16 @@ const App: React.FC = () => {
                         </>
                       )}
                     </button>
-                    <button 
+                     <button 
                       onClick={handleExportPDF}
-                      className="px-8 py-2 text-white font-bold heading-font uppercase text-xs flex items-center gap-2 shadow-lg"
-                      style={{ backgroundColor: brandContext.colors.secondary }}
+                      className="px-8 py-2 text-white font-bold heading-font uppercase text-xs flex items-center gap-2 shadow-lg dynamic-bg-secondary"
                       disabled={isExporting}
                     >
                       {isExporting ? 'Exporting...' : 'Download Branded PDF'}
                     </button>
-                    <button 
+                     <button 
                       onClick={handleExportHTML}
-                      className="px-6 py-2 border-2 text-slate-700 font-bold heading-font uppercase text-xs hover:bg-slate-50 transition-colors"
-                      style={{ borderColor: brandContext.colors.secondary, color: brandContext.colors.secondary }}
+                      className="px-6 py-2 border-2 text-slate-700 font-bold heading-font uppercase text-xs hover:bg-slate-50 transition-colors dynamic-border-secondary dynamic-color-secondary"
                     >
                       Copy HTML
                     </button>
@@ -540,11 +596,10 @@ const App: React.FC = () => {
                         <p className="text-[10px] uppercase tracking-widest text-slate-400">
                           By submitting, you agree to our privacy policy and data handling.
                         </p>
-                        <button
+                         <button
                           type="submit"
                           disabled={leadStatus === 'submitting'}
-                          className="px-6 py-2 text-white font-black uppercase text-xs rounded-lg shadow-lg disabled:opacity-60"
-                          style={{ backgroundColor: brandContext.colors.secondary }}
+                          className="px-6 py-2 text-white font-black uppercase text-xs rounded-lg shadow-lg disabled:opacity-60 dynamic-bg-secondary"
                         >
                           {leadStatus === 'submitting' ? 'Submitting...' : 'Send to CRM'}
                         </button>
@@ -565,7 +620,7 @@ const App: React.FC = () => {
               <div className="animate-fade-in">
                 <div className="mb-8 flex items-center justify-between">
                   <h2 className="text-3xl font-black text-slate-900 heading-font uppercase tracking-tight">Memory Bank</h2>
-                  <button onClick={() => setStep('input')} className="font-bold uppercase text-xs" style={{ color: brandContext.colors.secondary }}>← Dashboard</button>
+                  <button onClick={() => setStep('input')} className="font-bold uppercase text-xs dynamic-color-secondary">← Dashboard</button>
                 </div>
                 <MemoryBank 
                   items={archive} 
@@ -581,9 +636,14 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="py-6 border-t bg-white no-print">
-        <div className="container mx-auto px-4 text-center text-slate-400 text-[10px] font-black uppercase tracking-widest">
-          &copy; {new Date().getFullYear()} Physical Therapy Biz. AI Engine & Memory Active.
+      <footer className="py-8 border-t bg-white no-print">
+        <div className="container mx-auto px-4 text-center space-y-2">
+          <div className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+            &copy; {new Date().getFullYear()} Physical Therapy Biz. AI Engine & Memory Active.
+          </div>
+          <div className="text-slate-300 text-[9px] font-bold uppercase tracking-[0.15em] italic">
+            Developed internally by PT Biz's Acquisitions Team
+          </div>
         </div>
       </footer>
     </div>

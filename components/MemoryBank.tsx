@@ -10,7 +10,6 @@ interface MemoryBankProps {
 }
 
 const MemoryBank: React.FC<MemoryBankProps> = ({ items, onOpen, onDelete, brandColors }) => {
-  const secondary = brandColors.secondary;
 
   if (items.length === 0) {
     return (
@@ -25,7 +24,14 @@ const MemoryBank: React.FC<MemoryBankProps> = ({ items, onOpen, onDelete, brandC
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="memory-bank-root grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <style>{`
+        .memory-bank-root { --brand-primary: ${brandColors.primary}; --brand-secondary: ${brandColors.secondary}; --brand-accent: ${brandColors.accent}; }
+        .vault-primary-swatch { background-color: var(--brand-primary); }
+        .vault-secondary-swatch { background-color: var(--brand-secondary); }
+        .vault-accent-swatch { background-color: var(--brand-accent); }
+        .vault-open-btn { background-color: var(--brand-secondary); }
+      `}</style>
       {items.map((item) => (
         <div key={item.id} className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden group hover:border-blue-400 transition-all flex flex-col">
           <div className="p-6 flex-grow">
@@ -36,6 +42,8 @@ const MemoryBank: React.FC<MemoryBankProps> = ({ items, onOpen, onDelete, brandC
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
                 className="text-slate-300 hover:text-red-500 transition-colors"
+                title="Delete from Vault"
+                aria-label="Delete from Vault"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -49,16 +57,15 @@ const MemoryBank: React.FC<MemoryBankProps> = ({ items, onOpen, onDelete, brandC
             <p className="text-sm text-slate-500 italic line-clamp-2">"{item.content.subtitle}"</p>
             
             <div className="mt-6 flex gap-2">
-               <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: item.brandContext.colors.primary }}></div>
-               <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: item.brandContext.colors.secondary }}></div>
-               <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: item.brandContext.colors.accent }}></div>
+               <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm vault-primary-swatch"></div>
+               <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm vault-secondary-swatch"></div>
+               <div className="w-4 h-4 rounded-full border border-slate-200 shadow-sm vault-accent-swatch"></div>
             </div>
           </div>
           
           <button 
             onClick={() => onOpen(item)}
-            className="w-full py-4 text-white font-black heading-font uppercase text-xs tracking-[0.2em] transition-opacity"
-            style={{ backgroundColor: secondary }}
+            className="w-full py-4 text-white font-black heading-font uppercase text-xs tracking-[0.2em] transition-opacity vault-open-btn"
           >
             Open & Download
           </button>
