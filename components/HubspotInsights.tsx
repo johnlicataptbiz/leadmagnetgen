@@ -306,7 +306,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                   {report.kpis.map((k, i) => (
                     <div key={i} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                        <p className="text-[10px] font-bold uppercase text-slate-500 mb-1">{k.label}</p>
-                       <p className="text-xl font-black text-slate-900 truncate" title={k.value}>{k.value}</p>
+                       <p className="text-xl font-black text-slate-900 break-words" title={k.value}>{k.value}</p>
                        {k.note && <p className="text-[10px] text-green-600 mt-1 font-bold">{k.note}</p>}
                     </div>
                   ))}
@@ -425,7 +425,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                ))}
                
                {/* Add more button */}
-               {uploads.length < 10 && (
+               {uploads.length < 12 && (
                    <button 
                       onClick={() => fileInputRef.current?.click()}
                       className="border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center p-4 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all gap-2"

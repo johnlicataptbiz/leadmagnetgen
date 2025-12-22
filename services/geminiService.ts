@@ -287,11 +287,11 @@ Your job: produce ONE unified "Smart Market Report" that cross-references all re
 Rules:
 - Infer what each report represents from column names (pages/campaigns/forms/sources/etc).
 - Cross-reference reports when possible (e.g., same URL/title/campaign appearing in multiple exports).
-- IDENTIFY AND SELECT THE TOP 10 MOST IMPACTFUL KPIs. Prioritize metrics that reveal high-level strategic insights rather than simple row counts. Look for:
-    * Conversion rate gaps between different reports/channels.
-    * Significant outliers (top-performing campaigns or failing pages).
-    * Anomalies in the data that suggest a major business opportunity or risk.
-    * ROI or cost-efficiency indicators if monetary data is present.
+- IDENTIFY AND SELECT THE TOP 10 MOST IMPACTFUL KPIs. Prioritize metrics that reveal high-level strategic insights rather than simple row counts.
+- KPI LABELS MUST BE ULTRA-SPECIFIC: Never use vague, abbreviated, or generic labels (e.g., avoid "Manual", "Total", "Count").
+- Use the FULL name of the campaign, form, or asset when naming a KPI (e.g., "Cash Basis Field Manual Leads" instead of "Manual Leads").
+- Ensure the label clearly states WHAT is being measured and for WHICH specific asset/campaign (e.g. "Conversion Rate: [Form Name]").
+- Differentiate between manual processes and specific named assets (guides/manuals). If a metric refers to a 'Manual' as a document, include its full title.
 - For each KPI, include an insightful note explaining its strategic significance.
 - Prefer actionable insights for marketing decisions.
 - If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step.
