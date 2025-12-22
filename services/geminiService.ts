@@ -1,9 +1,12 @@
 
-import { Type } from "@google/genai";
 import { PT_BIZ_SYSTEM_INSTRUCTION, SUGGESTION_PROMPT, CONTENT_PROMPT } from "../constants";
 import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext } from "../types";
 
-// PROXY MODE: Securely call Vercel Backend
+/**
+ * PROXY MODE: Securely call Vercel Backend
+ * This avoids bundling the Google SDK in the frontend, which triggers browser security warnings
+ * and makes the application more robust.
+ */
 const callAIProxy = async (action: 'text' | 'multimodal', payload: any) => {
   const response = await fetch('/api/ai', {
     method: 'POST',
@@ -36,20 +39,16 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
     });
   }
 
-  const prompt = `SCANNING NEW ASSET: "${fileName}"
-  
-  TASK: Perform a deep clinical and stylistic scan of this document. 
+  const prompt = `Perform a deep clinical and stylistic scan of this document: "${fileName}".
   
   EXTRACTION RULES:
   1. TONALITY: Describe the specific voice (e.g., "Gritty, direct, avoids fluff").
   2. STYLING: Identify layout rules (e.g., "Uses numbered gameplans, prefers bold hooks").
-  3. COLORS: Even if this is a text document, identify any brand colors mentioned or implied.
-  4. LOGO: If described in the text, extract the description into styleNotes.
+  3. COLORS: Identify primary, secondary, and accent colors.
+  4. NOTES: Extract specific jargon or rules.
   
-  CONTENT FOR ANALYSIS:
-  """
-  ${rawContent.substring(0, 30000)}
-  """`;
+  CONTENT:
+  ${rawContent.substring(0, 30000)}`;
 
   parts.push({ text: prompt });
 
@@ -58,20 +57,20 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
     parts: action === 'multimodal' ? parts : [{ text: prompt }],
     prompt: action === 'text' ? prompt : undefined,
     responseSchema: {
-      type: Type.OBJECT,
+      type: "object",
       properties: {
         colors: {
-          type: Type.OBJECT,
+          type: "object",
           properties: {
-            primary: { type: Type.STRING },
-            secondary: { type: Type.STRING },
-            accent: { type: Type.STRING }
+            primary: { type: "string" },
+            secondary: { type: "string" },
+            accent: { type: "string" }
           },
           required: ["primary", "secondary", "accent"]
         },
-        tonality: { type: Type.STRING },
-        styling: { type: Type.STRING },
-        styleNotes: { type: Type.STRING }
+        tonality: { type: "string" },
+        styling: { type: "string" },
+        styleNotes: { type: "string" }
       },
       required: ["colors", "tonality", "styling", "styleNotes"]
     }
@@ -82,36 +81,30 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
   } catch (e) {
     console.error("AI Analysis Failed", e);
     return {
-      tonality: "Manual verification required.",
-      styling: "Failed to parse layout rules automatically.",
-      styleNotes: "The AI encountered an error reading this specific file type."
+      tonality: "Analysis unavailable.",
+      styling: "Analysis unavailable.",
+      styleNotes: "Error communicating with AI engine."
     };
   }
 };
 
 export const getLeadMagnetSuggestions = async (topic: string, brandContext?: BrandContext): Promise<LeadMagnetIdea[]> => {
-  const brandPrompt = brandContext ? `
-    BRAND MEMORY (MUST MIMIC):
-    - Tone: ${brandContext.tonality}
-    - Style: ${brandContext.styling}
-    - Notes: ${brandContext.styleNotes}
-  ` : "";
-
+  const brandPrompt = brandContext ? `Tone: ${brandContext.tonality}\nStyle: ${brandContext.styling}` : "";
   const fullPrompt = `${SUGGESTION_PROMPT(topic)}\n\n${brandPrompt}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
     prompt: fullPrompt,
     responseSchema: {
-      type: Type.ARRAY,
+      type: "array",
       items: {
-        type: Type.OBJECT,
+        type: "object",
         properties: {
-          id: { type: Type.STRING },
-          title: { type: Type.STRING },
-          hook: { type: Type.STRING },
-          outline: { type: Type.ARRAY, items: { type: Type.STRING } },
-          rationale: { type: Type.STRING },
+          id: { type: "string" },
+          title: { type: "string" },
+          hook: { type: "string" },
+          outline: { type: "array", items: { type: "string" } },
+          rationale: { type: "string" },
         },
         required: ["id", "title", "hook", "outline", "rationale"]
       }
@@ -121,33 +114,24 @@ export const getLeadMagnetSuggestions = async (topic: string, brandContext?: Bra
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    console.error("Suggestions Failed", e);
     return [];
   }
 };
 
 export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitles: string[], brandContext?: BrandContext): Promise<LeadMagnetIdea | null> => {
-  const brandPrompt = brandContext ? `
-    ACTING AS PT BIZ ARCHITECT:
-    - Tone: ${brandContext.tonality}
-    - Style: ${brandContext.styling}
-  ` : "";
-
-  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}".
-  CRITICAL: Do NOT use existing titles: ${existingTitles.join(', ')}.
-  ${brandPrompt}`;
+  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}". Topic: ${topic}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
     prompt: fullPrompt,
     responseSchema: {
-      type: Type.OBJECT,
+      type: "object",
       properties: {
-        id: { type: Type.STRING },
-        title: { type: Type.STRING },
-        hook: { type: Type.STRING },
-        outline: { type: Type.ARRAY, items: { type: Type.STRING } },
-        rationale: { type: Type.STRING },
+        id: { type: "string" },
+        title: { type: "string" },
+        hook: { type: "string" },
+        outline: { type: "array", items: { type: "string" } },
+        rationale: { type: "string" },
       },
       required: ["id", "title", "hook", "outline", "rationale"]
     }
@@ -161,40 +145,32 @@ export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitle
 };
 
 export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandContext?: BrandContext): Promise<LeadMagnetContent | null> => {
-  const brandPrompt = brandContext ? `
-    EVOLVE THIS BRAND DNA:
-    - Tonality: ${brandContext.tonality}
-    - Layout Patterns: ${brandContext.styling}
-    - Nuances: ${brandContext.styleNotes}
-    - Colors: ${brandContext.colors.primary}, ${brandContext.colors.secondary}
-  ` : "";
-
-  const fullPrompt = `${CONTENT_PROMPT(idea)}\n\n${brandPrompt}`;
+  const fullPrompt = `${CONTENT_PROMPT(idea)}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
     prompt: fullPrompt,
     responseSchema: {
-      type: Type.OBJECT,
+      type: "object",
       properties: {
-        title: { type: Type.STRING },
-        subtitle: { type: Type.STRING },
-        introduction: { type: Type.STRING },
+        title: { type: "string" },
+        subtitle: { type: "string" },
+        introduction: { type: "string" },
         sections: {
-          type: Type.ARRAY,
+          type: "array",
           items: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              heading: { type: Type.STRING },
-              content: { type: Type.STRING },
-              type: { type: Type.STRING },
-              items: { type: Type.ARRAY, items: { type: Type.STRING } }
+              heading: { type: "string" },
+              content: { type: "string" },
+              type: { type: "string" },
+              items: { type: "array", items: { type: "string" } }
             },
             required: ["heading", "content", "type"]
           }
         },
-        conclusion: { type: Type.STRING },
-        cta: { type: Type.STRING },
+        conclusion: { type: "string" },
+        cta: { type: "string" },
       },
       required: ["title", "subtitle", "introduction", "sections", "conclusion", "cta"]
     }
@@ -208,29 +184,27 @@ export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandConte
 };
 
 export const analyzeHubspotData = async (rawContent: string, brandContext?: BrandContext): Promise<HubspotAnalysis | null> => {
-  const prompt = `Perform strategic analysis on this HubSpot report.
-  Data: """${rawContent}"""
-  ${brandContext ? `Context: ${brandContext.tonality}` : ""}`;
+  const prompt = `Analyze HubSpot Data: ${rawContent}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
     prompt: prompt,
     responseSchema: {
-      type: Type.OBJECT,
+      type: "object",
       properties: {
-        summary: { type: Type.STRING },
-        whatIsWorking: { type: Type.ARRAY, items: { type: Type.STRING } },
-        whatIsNotWorking: { type: Type.ARRAY, items: { type: Type.STRING } },
+        summary: { type: "string" },
+        whatIsWorking: { type: "array", items: { type: "string" } },
+        whatIsNotWorking: { type: "array", items: { type: "string" } },
         strategicSuggestions: {
-          type: Type.ARRAY,
+          type: "array",
           items: {
-            type: Type.OBJECT,
+            type: "object",
             properties: {
-              id: { type: Type.STRING },
-              title: { type: Type.STRING },
-              hook: { type: Type.STRING },
-              outline: { type: Type.ARRAY, items: { type: Type.STRING } },
-              rationale: { type: Type.STRING }
+              id: { type: "string" },
+              title: { type: "string" },
+              hook: { type: "string" },
+              outline: { type: "array", items: { type: "string" } },
+              rationale: { type: "string" }
             },
             required: ["id", "title", "hook", "outline", "rationale"]
           }

@@ -1,9 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Standardized AI Proxy for secure API key management
 export default async function handler(req: any, res: any) {
-  // CORS Configuration
+  // CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -43,7 +42,8 @@ export default async function handler(req: any, res: any) {
     }
 
     const response = await result.response;
-    return res.status(200).json(JSON.parse(response.text()));
+    const text = response.text();
+    return res.status(200).json(JSON.parse(text));
 
   } catch (error: any) {
     console.error("Vercel AI Error:", error);

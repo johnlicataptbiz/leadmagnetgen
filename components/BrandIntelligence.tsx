@@ -107,7 +107,15 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
 
   return (
     <div className="max-w-7xl mx-auto py-6">
-      <input type="file" ref={fileInputRef} className="hidden" onChange={handleFile} />
+      <input 
+        id="dna-file-upload"
+        name="dna-file-upload"
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        onChange={handleFile} 
+        aria-label="Upload brand asset for DNA extraction"
+      />
       
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Left Column: Input */}

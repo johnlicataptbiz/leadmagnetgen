@@ -18,10 +18,12 @@ const TopicForm: React.FC<TopicFormProps> = ({ onSubmit }) => {
       <div className="shimmer-active absolute inset-0 opacity-5 pointer-events-none"></div>
       <div className="relative z-10">
         <div className="mb-6">
-          <label className="block text-slate-700 font-black mb-3 uppercase tracking-[0.15em] text-xs">
+          <label htmlFor="topic-input" className="block text-slate-700 font-black mb-3 uppercase tracking-[0.15em] text-xs">
             What is the primary topic?
           </label>
           <input 
+            id="topic-input"
+            name="topic"
             type="text"
             value={val}
             onChange={(e) => setVal(e.target.value)}
