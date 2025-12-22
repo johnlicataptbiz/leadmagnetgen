@@ -1,4 +1,3 @@
-
 import { PT_BIZ_SYSTEM_INSTRUCTION, SUGGESTION_PROMPT, CONTENT_PROMPT } from "../constants";
 import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext, SmartMarketReport } from "../types";
 
@@ -288,7 +287,12 @@ Your job: produce ONE unified "Smart Market Report" that cross-references all re
 Rules:
 - Infer what each report represents from column names (pages/campaigns/forms/sources/etc).
 - Cross-reference reports when possible (e.g., same URL/title/campaign appearing in multiple exports).
-- EXTRACT AT LEAST 8 DISTINCT KPIs. Look for totals, averages, conversion rates, and top performers.
+- IDENTIFY AND SELECT THE TOP 10 MOST IMPACTFUL KPIs. Prioritize metrics that reveal high-level strategic insights rather than simple row counts. Look for:
+    * Conversion rate gaps between different reports/channels.
+    * Significant outliers (top-performing campaigns or failing pages).
+    * Anomalies in the data that suggest a major business opportunity or risk.
+    * ROI or cost-efficiency indicators if monetary data is present.
+- For each KPI, include an insightful note explaining its strategic significance.
 - Prefer actionable insights for marketing decisions.
 - If data is incomplete/ambiguous, call it out in cautions and provide a specific, remedial ACTION step.
 - ALWAYS include a "Cautions" array with at least 2 items.

@@ -235,7 +235,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
           </div>
           
           <div className="w-full relative h-[300px]">
-             <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
+             <ResponsiveContainer width="100%" height={300} minHeight={300} debounce={50} minWidth={0}>
                 {chart.type === 'line' ? (
                   <LineChart data={dataPoints} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
