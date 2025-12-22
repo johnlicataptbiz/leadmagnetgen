@@ -65,7 +65,7 @@ export interface SmartMarketReport {
   kpis: SmartKpi[];
   insights: string[];
   charts: SmartChart[];
-  cautions?: string[];
+  cautions?: Array<{ caution: string; action: string }>;
 }
 
 export interface BrandColors {

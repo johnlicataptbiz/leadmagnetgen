@@ -144,8 +144,20 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
   // --- RENDERERS ---
 
   const renderChart = (chart: SmartChart, idx: number) => {
+    // Robustness check
+    if (!chart.series || chart.series.length === 0 || !chart.series[0].points || chart.series[0].points.length === 0) {
+       return (
+          <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-4 break-inside-avoid flex items-center justify-center h-64">
+             <div className="text-center text-slate-400">
+                <p className="text-xs font-bold uppercase mb-2">Unavailable</p>
+                <p className="text-[10px] max-w-[150px] mx-auto opacity-70">Chart data for "{chart.title}" could not be generated from the dataset.</p>
+             </div>
+          </div>
+       );
+    }
+  
     // Simple visualizer for bar/line
-    const maxVal = chart.series?.reduce((max, s) => {
+    const maxVal = chart.series.reduce((max, s) => {
         const sMax = Math.max(...s.points.map(p => p.y));
         return sMax > max ? sMax : max;
     }, 0) || 100;
@@ -162,7 +174,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
          
          {/* Simple Bar/Line Viz Implementation */}
          <div className="h-48 flex items-end gap-2 border-b border-slate-300 pb-2 overflow-x-auto">
-            {chart.series?.[0]?.points.slice(0, 12).map((p, i) => { // limit dots
+            {chart.series[0].points.slice(0, 12).map((p, i) => { // limit dots
                const height = Math.max(5, (p.y / maxVal) * 100);
                return (
                   <div key={i} className="flex-1 min-w-[30px] flex flex-col items-center gap-1 group">
@@ -172,7 +184,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                      ></div>
                      <span className="text-[9px] text-slate-500 truncate w-full text-center">{p.x}</span>
                      {/* Tooltip */}
-                     <div className="absolute opacity-0 group-hover:opacity-100 bg-black text-white text-[10px] p-1 rounded -mt-8 pointer-events-none">
+                     <div className="absolute opacity-0 group-hover:opacity-100 bg-black text-white text-[10px] p-1 rounded -mt-8 pointer-events-none z-10 whitespace-nowrap">
                         {p.y}
                      </div>
                   </div>
@@ -257,9 +269,15 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
                     </h3>
                     <ul className="space-y-3">
                        {report.cautions.map((c, i) => (
-                          <li key={i} className="flex gap-3 text-xs font-medium text-amber-800 bg-amber-50 p-3 rounded-lg border border-amber-100">
-                             <span className="select-none">⚠️</span>
-                             {c}
+                          <li key={i} className="text-xs font-medium text-amber-800 bg-amber-50 p-4 rounded-lg border border-amber-100">
+                             <div className="flex gap-3 mb-2">
+                                <span className="select-none">⚠️</span>
+                                <p className="leading-relaxed">{c.caution}</p>
+                             </div>
+                             <div className="ml-7 pl-3 border-l-2 border-amber-200">
+                                <p className="text-[10px] uppercase font-black tracking-widest text-amber-500 mb-1">Recommended Action</p>
+                                <p className="text-amber-900 font-bold">{c.action}</p>
+                             </div>
                           </li>
                        ))}
                     </ul>
