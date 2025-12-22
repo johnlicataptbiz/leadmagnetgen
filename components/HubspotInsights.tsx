@@ -110,7 +110,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
     if (!e.target.files) return;
     setErrorMessage(null);
     
-    const selectedFiles = Array.from(e.target.files).slice(0, 8 - uploads.length) as File[];
+    const selectedFiles = Array.from(e.target.files).slice(0, 12 - uploads.length) as File[];
     
     // 1. Add them all as pending first
     const pendingFiles: UploadedFilePreview[] = selectedFiles.map(f => ({
@@ -372,8 +372,9 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
       <div className="bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-200">
          <div className="text-center mb-10">
             <h2 className="text-2xl font-black uppercase text-slate-900 tracking-tight mb-2">Market Data Intelligence</h2>
-            <p className="text-slate-500 max-w-lg mx-auto text-sm">Upload your exported CSVs from HubSpot (Campaigns, Forms, Landing Pages). Our AI Analyst will correlate the data into a unified dashboard.</p>
-         </div>
+            <p className="text-slate-500 text-xs mb-8 max-w-md mx-auto">
+          Upload your exported CSVs from HubSpot (Campaigns, Forms, Landing Pages). Our AI Analyst will correlate the data into a unified dashboard. (Max 12 files)
+        </p></div>
 
          {errorMessage && (
             <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold mb-6 text-center border border-red-100">
