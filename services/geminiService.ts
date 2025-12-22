@@ -67,7 +67,7 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
   EXTRACTION RULES:
   1. TONALITY: Describe the specific voice (e.g., "Gritty, direct, avoids fluff").
   2. STYLING: Identify layout rules (e.g., "Uses numbered gameplans, prefers bold hooks").
-  3. COLORS: Identify primary, secondary, and accent colors.
+  3. COLORS: Identify primary, secondary, and accent colors. ALWAYS return valid HEX codes (e.g. #000000), NEVER color names.
   4. NOTES: Extract specific jargon or rules.
   
   CONTENT:
@@ -303,7 +303,7 @@ ${reports
       : "";
     return `\n--- REPORT ${idx + 1}: ${r.name} ---\nRowCount: ${r.rowCount}\nHeaders: ${r.headers.join(
       " | "
-    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 10000)}`;
+    )}\n${stats}\nSample:\n${r.sampleCsv.substring(0, 2000)}`;
   })
   .join("\n")}
 

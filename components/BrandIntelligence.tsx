@@ -28,6 +28,27 @@ interface BrandIntelligenceProps {
   onClose: () => void;
 }
 
+const ensureHex = (color: string | undefined, fallback: string): string => {
+  if (!color) return fallback;
+  const hexRegex = /^#([A-Fa-f0-9]{3}){1,2}$/;
+  if (hexRegex.test(color)) return color;
+  
+  // Basic named color to hex map (for common AI hallucinations)
+  const map: Record<string, string> = {
+    'navy': '#101828',
+    'navy blue': '#101828',
+    'black': '#000000',
+    'white': '#FFFFFF',
+    'electric blue': '#2563EB',
+    'blue': '#2563EB',
+    'red': '#EF4444',
+    'green': '#22C55E'
+  };
+  
+  const lower = color.toLowerCase().trim();
+  return map[lower] || fallback;
+};
+
 const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange, onClose }) => {
   const [processingState, setProcessingState] = useState<{type: 'logo' | 'pdf' | null, progress: number}>({ type: null, progress: 0 });
   const [pdfName, setPdfName] = useState<string | null>(null);
@@ -217,8 +238,11 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
                   tonality: analysis.tonality || context.tonality,
                   styling: analysis.styling || context.styling,
                   styleNotes: analysis.styleNotes || context.styleNotes,
-                  // If AI extracted better colors, use them
-                  colors: analysis.colors || context.colors
+                  colors: {
+                    primary: ensureHex(analysis.colors?.primary, context.colors.primary),
+                    secondary: ensureHex(analysis.colors?.secondary, context.colors.secondary),
+                    accent: ensureHex(analysis.colors?.accent, context.colors.accent),
+                  }
                 };
                 addReferenceDoc(`Lead Magnet: ${file.name}`, nextContext);
                 setProcessingState({ type: null, progress: 0 });
@@ -237,6 +261,7 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
   };
 
   const updateColor = (colorKey: 'primary' | 'secondary' | 'accent', value: string) => {
+    // Only set if it looks like a hex code or color name (input color will handle it)
     onChange({
       ...context,
       colors: { ...context.colors, [colorKey]: value }
