@@ -43,12 +43,12 @@ const App: React.FC = () => {
     return {
       logoUrl: undefined,
       colors: {
-        primary: '#64748B',
-        secondary: '#94A3B8',
-        accent: '#CBD5E1'
+        primary: '#1e293b',
+        secondary: '#3b82f6',
+        accent: '#10b981'
       },
-      tonality: 'Pending extraction...',
-      styling: 'Pending extraction...',
+      tonality: '',
+      styling: '',
       styleNotes: '',
       referenceDocNames: []
     };
