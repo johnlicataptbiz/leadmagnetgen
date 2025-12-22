@@ -22,7 +22,8 @@ export default async function handler(req, res) {
     const { action, payload } = req.body;
     
     // Select model based on 2025 Gemini 3 Specifications
-    const modelName = action === 'image' ? 'gemini-3-pro-image-preview' : 'gemini-3-flash-preview';
+    // Identifiers: gemini-3-pro, gemini-3-flash
+    const modelName = action === 'image' ? 'gemini-3-pro' : 'gemini-3-flash';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
     const requestBody = {
@@ -32,8 +33,8 @@ export default async function handler(req, res) {
       generationConfig: {
         response_mime_type: action === 'image' ? "text/plain" : "application/json",
         response_schema: action === 'image' ? undefined : payload.responseSchema,
-        // Gemini 3 Thinking Levels
         thinking_level: payload.precision === 'high' ? 'high' : 'low',
+        temperature: 1.0, // Optimized for Gemini 3
       }
     };
 
@@ -53,10 +54,17 @@ export default async function handler(req, res) {
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text();
+      let details = "";
+      try {
+        const parsed = JSON.parse(errorText);
+        details = parsed.error?.message || errorText;
+      } catch (e) {
+        details = errorText.substring(0, 200);
+      }
       return res.status(geminiResponse.status).json({ 
-        error: 'Gemini API error',
+        error: `Gemini API error (${modelName})`,
         status: geminiResponse.status,
-        details: errorText.substring(0, 500)
+        details: details
       });
     }
 

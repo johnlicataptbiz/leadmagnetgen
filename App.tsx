@@ -188,17 +188,14 @@ const App: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const opt = {
-      margin: [0.1, 0.1, 0.1, 0.1], 
+      margin: [0.3, 0.4, 0.3, 0.4], 
       filename: `${content?.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'pt-biz-lead-magnet'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         letterRendering: true,
-        allowTaint: false,
-        logging: false,
         scrollY: 0,
-        windowWidth: 1024, // Consistent width for export
         ignoreElements: (element: Element) => element.classList.contains('no-print')
       },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
@@ -206,12 +203,11 @@ const App: React.FC = () => {
     };
 
     try {
-      // Use Worker API for better stability in complex Vibe Coding layouts
       // @ts-ignore
       await window.html2pdf().set(opt).from(element).save();
     } catch (err: any) {
       console.error("PDF Export failed:", err);
-      setErrorMessage(`PDF Generation Failed: ${err.message || "Renderer Error"}. Try 'Copy HTML' as a fallback.`);
+      setErrorMessage(`PDF Generation Failed: ${err.message || "Renderer Crash"}. Please try 'Copy HTML'.`);
     } finally {
       setIsExporting(false);
     }
