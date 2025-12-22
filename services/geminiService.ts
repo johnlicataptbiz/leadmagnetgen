@@ -3,8 +3,7 @@ import { Type } from "@google/genai";
 import { PT_BIZ_SYSTEM_INSTRUCTION, SUGGESTION_PROMPT, CONTENT_PROMPT } from "../constants";
 import { LeadMagnetIdea, LeadMagnetContent, HubspotAnalysis, BrandContext } from "../types";
 
-// PROXY MODE: Instead of calling Google directly (Insecure in browser),
-// we call our own secure Vercel API endpoint.
+// PROXY MODE: Securely call Vercel Backend
 const callAIProxy = async (action: 'text' | 'multimodal', payload: any) => {
   const response = await fetch('/api/ai', {
     method: 'POST',
@@ -14,6 +13,7 @@ const callAIProxy = async (action: 'text' | 'multimodal', payload: any) => {
   
   if (!response.ok) {
     const err = await response.json();
+    console.error("AI Proxy Error:", err);
     throw new Error(err.error || "Server failed to process AI request");
   }
   
@@ -36,17 +36,17 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
     });
   }
 
-  const prompt = `Analyze this existing lead magnet/document named "${fileName}". 
-  ${logoUrl ? "I have also provided the brand logo for visual context." : ""}
-  Your goal is to extract the "Brand DNA" so that a future AI can perfectly mimic its style, tone, and clinical depth.
+  const prompt = `SCANNING NEW ASSET: "${fileName}"
   
-  Please provide detailed findings for:
-  1. Colors: Identify primary, secondary, and accent colors.
-  2. Tonality: Define the voice. Is it direct? Academic? Gritty? Emotional? Mention specific recurring linguistic choices.
-  3. Styling & Layout: How does it present information? (e.g., 'uses hypothetical patient scenarios', 'heavy use of 3-step frameworks', 'prefers bulleted summaries over paragraphs').
-  4. Clinical/Brand Nuances: Extract 3-5 specific "rules" or "jargon" unique to this brand (e.g., 'calls patients "clients"', 'uses the term "clinical freedom" frequently').
+  TASK: Perform a deep clinical and stylistic scan of this document. 
   
-  Document Content Snippet:
+  EXTRACTION RULES:
+  1. TONALITY: Describe the specific voice (e.g., "Gritty, direct, avoids fluff").
+  2. STYLING: Identify layout rules (e.g., "Uses numbered gameplans, prefers bold hooks").
+  3. COLORS: Even if this is a text document, identify any brand colors mentioned or implied.
+  4. LOGO: If described in the text, extract the description into styleNotes.
+  
+  CONTENT FOR ANALYSIS:
   """
   ${rawContent.substring(0, 30000)}
   """`;
@@ -55,7 +55,7 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
-    parts: action === 'multimodal' ? parts : undefined,
+    parts: action === 'multimodal' ? parts : [{ text: prompt }],
     prompt: action === 'text' ? prompt : undefined,
     responseSchema: {
       type: Type.OBJECT,
@@ -80,14 +80,18 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
   try {
     return await callAIProxy(action, payload);
   } catch (e) {
-    console.error("Failed to parse brand analysis", e);
-    return {};
+    console.error("AI Analysis Failed", e);
+    return {
+      tonality: "Manual verification required.",
+      styling: "Failed to parse layout rules automatically.",
+      styleNotes: "The AI encountered an error reading this specific file type."
+    };
   }
 };
 
 export const getLeadMagnetSuggestions = async (topic: string, brandContext?: BrandContext): Promise<LeadMagnetIdea[]> => {
   const brandPrompt = brandContext ? `
-    BRAND MEMORY:
+    BRAND MEMORY (MUST MIMIC):
     - Tone: ${brandContext.tonality}
     - Style: ${brandContext.styling}
     - Notes: ${brandContext.styleNotes}
@@ -117,23 +121,20 @@ export const getLeadMagnetSuggestions = async (topic: string, brandContext?: Bra
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    console.error("Failed to get suggestions", e);
+    console.error("Suggestions Failed", e);
     return [];
   }
 };
 
 export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitles: string[], brandContext?: BrandContext): Promise<LeadMagnetIdea | null> => {
   const brandPrompt = brandContext ? `
-    BRAND MEMORY:
+    ACTING AS PT BIZ ARCHITECT:
     - Tone: ${brandContext.tonality}
     - Style: ${brandContext.styling}
-    - Notes: ${brandContext.styleNotes}
   ` : "";
 
-  const fullPrompt = `Generate ONE additional high-converting lead magnet idea for the topic: "${topic}".
-  CRITICAL: Do NOT use any of these existing titles: ${existingTitles.join(', ')}.
-  Provide something unique and strategic for cash-based PT business growth.
-  
+  const fullPrompt = `Generate ONE unique lead magnet idea for: "${topic}".
+  CRITICAL: Do NOT use existing titles: ${existingTitles.join(', ')}.
   ${brandPrompt}`;
 
   const payload = {
@@ -155,24 +156,17 @@ export const getSingleLeadMagnetSuggestion = async (topic: string, existingTitle
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    console.error("Failed to get single suggestion", e);
     return null;
   }
 };
 
 export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandContext?: BrandContext): Promise<LeadMagnetContent | null> => {
   const brandPrompt = brandContext ? `
-    CRITICAL BRAND DNA INSTRUCTIONS:
-    You MUST mimic the following style exactly:
-    - Target Tonality: ${brandContext.tonality}
-    - Document Styling & Layout Patterns: ${brandContext.styling}
-    - Clinical & Brand Nuances: ${brandContext.styleNotes}
-    - Brand Color Palette: Primary: ${brandContext.colors.primary}, Secondary: ${brandContext.colors.secondary}, Accent: ${brandContext.colors.accent}
-
-    Instructions for mimicry:
-    1. If the source material uses specific jargon or "insider" clinical language, adopt it.
-    2. If the styling mentions specific structures (like 'uses numbered lists for everything' or 'prefers short, punchy paragraphs'), use those exact structures for your content sections.
-    3. The tone should feel like an evolution of their existing document but through the PT lens of growth and freedom.
+    EVOLVE THIS BRAND DNA:
+    - Tonality: ${brandContext.tonality}
+    - Layout Patterns: ${brandContext.styling}
+    - Nuances: ${brandContext.styleNotes}
+    - Colors: ${brandContext.colors.primary}, ${brandContext.colors.secondary}
   ` : "";
 
   const fullPrompt = `${CONTENT_PROMPT(idea)}\n\n${brandPrompt}`;
@@ -209,28 +203,14 @@ export const generateLeadMagnetContent = async (idea: LeadMagnetIdea, brandConte
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    console.error("Failed to generate content", e);
     return null;
   }
 };
 
 export const analyzeHubspotData = async (rawContent: string, brandContext?: BrandContext): Promise<HubspotAnalysis | null> => {
-  const brandContextStr = brandContext ? `Use our established Tone (${brandContext.tonality}) and Styling (${brandContext.styling}) when proposing new ideas.` : "";
-  
-  const prompt = `Analyze the following raw HubSpot report data from the last 30 days for PT Biz.
-  
-  Data:
-  """
-  ${rawContent}
-  """
-  
-  ${brandContextStr}
-  
-  Provide:
-  1. A high-level executive summary.
-  2. Winning themes.
-  3. Underperforming themes.
-  4. 4 brand new strategic lead magnet ideas tailored to our practice style.`;
+  const prompt = `Perform strategic analysis on this HubSpot report.
+  Data: """${rawContent}"""
+  ${brandContext ? `Context: ${brandContext.tonality}` : ""}`;
 
   const payload = {
     systemInstruction: PT_BIZ_SYSTEM_INSTRUCTION,
@@ -263,7 +243,6 @@ export const analyzeHubspotData = async (rawContent: string, brandContext?: Bran
   try {
     return await callAIProxy('text', payload);
   } catch (e) {
-    console.error("Failed to analyze HubSpot data", e);
     return null;
   }
 };
