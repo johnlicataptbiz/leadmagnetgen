@@ -11,12 +11,32 @@ interface BrandIntelligenceProps {
 }
 
 const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange, onClose }) => {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingState, setProcessingState] = useState<{type: 'logo' | 'pdf' | null, progress: number}>({ type: null, progress: 0 });
+  const [pdfName, setPdfName] = useState<string | null>(null);
+  
+  // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // Derived state: Is there any data?
   const hasData = context.referenceDocNames.length > 0 || context.logoUrl;
+  const isProcessing = processingState.type !== null;
+
+  const simulateProgress = () => {
+    setProcessingState(prev => ({ ...prev, progress: 0 }));
+    const interval = setInterval(() => {
+      setProcessingState(prev => {
+        if (prev.progress >= 90) {
+          clearInterval(interval);
+          return prev;
+        }
+        // Fast at first, slower at end
+        const increment = prev.progress < 50 ? 5 : prev.progress < 80 ? 2 : 0.5;
+        return { ...prev, progress: Math.min(90, prev.progress + increment) };
+      });
+    }, 100);
+    return interval;
+  };
 
   const extractColors = async (dataUrl: string) => {
     return new Promise<{primary: string, secondary: string, accent: string}>((resolve) => {
@@ -25,39 +45,42 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
       img.onload = () => {
         try {
           const colorThief = new ColorThief();
-          // Get more colors to filter from
-          const palette = colorThief.getPalette(img, 8);
+          // Get 10 colors to choose from
+          const palette = colorThief.getPalette(img, 10);
           const rgbToHex = (r: number, g: number, b: number) => 
             "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
           
-          // Separate vibrant colors from near-white/black
-          const vibrantColors: number[][] = [];
-          const neutralColors: number[][] = [];
+          // Simple distinctness filter
+          const uniqueColors: string[] = [];
           
-          palette.forEach(([r, g, b]) => {
-            const brightness = (r + g + b) / 3;
-            const isNearWhite = brightness > 240;
-            const isNearBlack = brightness < 15;
-            
-            if (isNearWhite || isNearBlack) {
-              neutralColors.push([r, g, b]);
-            } else {
-              vibrantColors.push([r, g, b]);
-            }
-          });
+          // Helper to check if color is too similar to existing ones
+          const isDistinct = (r: number, g: number, b: number) => {
+            if (uniqueColors.length === 0) return true;
+            return uniqueColors.every(hex => {
+              const r2 = parseInt(hex.substring(1, 3), 16);
+              const g2 = parseInt(hex.substring(3, 5), 16);
+              const b2 = parseInt(hex.substring(5, 7), 16);
+              const dist = Math.sqrt(Math.pow(r - r2, 2) + Math.pow(g - g2, 2) + Math.pow(b - b2, 2));
+              return dist > 30; // Threshold for distinctness
+            });
+          }
 
-          // Prioritize vibrant colors, but use neutrals if we don't have enough
-          const finalPalette = [...vibrantColors, ...neutralColors].slice(0, 3);
+          // Pick top 3 distinct colors (allowing white/black)
+          for (const [r, g, b] of palette) {
+             if (isDistinct(r, g, b) && uniqueColors.length < 3) {
+                uniqueColors.push(rgbToHex(r, g, b));
+             }
+          }
           
-          // Ensure we have at least 3 colors
-          while (finalPalette.length < 3) {
-            finalPalette.push(palette[finalPalette.length] || [128, 128, 128]);
+          // Fill if less than 3
+          while (uniqueColors.length < 3) {
+            uniqueColors.push('#ffffff'); // Fallback to white
           }
 
           resolve({
-            primary: rgbToHex(finalPalette[0][0], finalPalette[0][1], finalPalette[0][2]),
-            secondary: rgbToHex(finalPalette[1][0], finalPalette[1][1], finalPalette[1][2]),
-            accent: rgbToHex(finalPalette[2][0], finalPalette[2][1], finalPalette[2][2]),
+            primary: uniqueColors[0],
+            secondary: uniqueColors[1],
+            accent: uniqueColors[2],
           });
         } catch (err) {
           console.error('Color extraction failed:', err);
@@ -83,8 +106,12 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
             body: JSON.stringify({
               action: 'text',
               payload: {
-                prompt: `Analyze this lead magnet and extract brand voice:\n\n${sample}`,
-                systemInstruction: `Extract: 1) Tonality (voice/tone), 2) Styling (formatting patterns), 3) Style Notes (unique characteristics). Be concise.`,
+                prompt: `Analyze this lead magnet context. Extract brand voice/tone, visual style guide, and any inferred color palette hints (e.g. "uses blue and orange").\n\n${sample}`,
+                systemInstruction: `Extract: 
+1. Tonality (voice/tone), 
+2. Styling (formatting patterns), 
+3. Style Notes (unique characteristics + any color hints found in text). 
+Be concise.`,
                 responseSchema: {
                   type: 'object',
                   properties: {
@@ -108,48 +135,67 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
       reader.readAsText(file);
     });
   };
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsProcessing(true);
-    try {
-      if (file.type.startsWith('image/')) {
-        // Image: Extract colors locally with ColorThief
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const logoUrl = reader.result as string;
-          const colors = await extractColors(logoUrl);
-          onChange({
-             ...context,
-             logoUrl,
-             colors,
-             referenceDocNames: [...context.referenceDocNames, `Logo: ${file.name}`]
-          });
-          setIsProcessing(false);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-        const analysis = await analyzePDF(file);
-        onChange({
-          ...context,
-          tonality: analysis.tonality,
-          styling: analysis.styling,
-          styleNotes: analysis.styleNotes,
-          referenceDocNames: [...context.referenceDocNames, `Lead Magnet: ${file.name}`]
-        });
-        setIsProcessing(false);
-      } else {
-        onChange({
-          ...context,
-          referenceDocNames: [...context.referenceDocNames, `Doc: ${file.name}`]
-        });
-        setIsProcessing(false);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("File processing failed. Please try a different file.");
-      setIsProcessing(false);
+    if (e.target.name === 'dna-file-upload') {
+        // LOGO UPLOAD
+        setProcessingState({ type: 'logo', progress: 0 });
+        const interval = simulateProgress();
+        
+        try {
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const logoUrl = reader.result as string;
+              const colors = await extractColors(logoUrl);
+              clearInterval(interval);
+              setProcessingState({ type: 'logo', progress: 100 });
+              
+              setTimeout(() => {
+                  onChange({
+                     ...context,
+                     logoUrl,
+                     colors,
+                     referenceDocNames: [...context.referenceDocNames, `Logo: ${file.name}`]
+                  });
+                  setProcessingState({ type: null, progress: 0 });
+              }, 500);
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            clearInterval(interval);
+            console.error(err);
+            setProcessingState({ type: null, progress: 0 });
+        }
+    } else {
+        // PDF UPLOAD
+        setProcessingState({ type: 'pdf', progress: 0 });
+        const interval = simulateProgress();
+        
+        try {
+            const analysis = await analyzePDF(file);
+            clearInterval(interval);
+            setProcessingState({ type: 'pdf', progress: 100 });
+            setPdfName(file.name);
+
+            setTimeout(() => {
+                onChange({
+                  ...context,
+                  tonality: analysis.tonality,
+                  styling: analysis.styling,
+                  styleNotes: analysis.styleNotes,
+                  referenceDocNames: [...context.referenceDocNames, `Lead Magnet: ${file.name}`]
+                });
+                setProcessingState({ type: null, progress: 0 });
+            }, 500);
+        } catch (err) {
+            clearInterval(interval);
+            console.error(err);
+            alert("Analysis failed. Please try again.");
+            setProcessingState({ type: null, progress: 0 });
+        }
     }
   };
 
@@ -197,14 +243,17 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
                  <h2 className="text-2xl font-black uppercase tracking-tight">Brand Setup</h2>
               </div>
               
+              {/* Logo Upload UI */}
               <div 
                 onClick={() => !isProcessing && fileInputRef.current?.click()}
-                className={`border-4 border-dashed rounded-[2rem] p-12 text-center cursor-pointer transition-all ${isProcessing ? 'border-blue-500 bg-blue-50 animate-pulse' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50'}`}
+                className={`border-4 border-dashed rounded-[2rem] p-12 text-center cursor-pointer transition-all ${isProcessing && processingState.type === 'logo' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50 relative overflow-hidden'}`}
               >
-                {isProcessing ? (
+                {isProcessing && processingState.type === 'logo' ? (
                   <div className="space-y-4">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                    <p className="font-bold text-blue-600 uppercase text-xs tracking-widest">Processing...</p>
+                     <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 transition-all duration-300 ease-out" style={{ width: `${processingState.progress}%` }}></div>
+                     </div>
+                     <p className="font-bold text-blue-600 uppercase text-xs tracking-widest">Analyzing Logo... {Math.round(processingState.progress)}%</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -217,26 +266,43 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
                     )}
                     <div>
                       <p className="text-lg font-black uppercase">{context.logoUrl ? 'Change Logo' : 'Upload Logo'}</p>
-                      <p className="text-slate-400 text-sm mt-1">Colors will be extracted automatically</p>
+                      <p className="text-slate-400 text-sm mt-1">Extracts colors automatically</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* PDF / Lead Magnet Upload */}
+              {/* PDF / Lead Magnet Upload UI */}
               <div 
                 onClick={() => !isProcessing && pdfInputRef.current?.click()}
-                className={`border-4 border-dashed rounded-[2rem] p-8 text-center cursor-pointer transition-all ${isProcessing ? 'border-blue-500 bg-blue-50 opacity-50' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50'}`}
+                className={`border-4 border-dashed rounded-[2rem] p-8 text-center cursor-pointer transition-all ${isProcessing && processingState.type === 'pdf' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50'}`}
               >
-                 <div className="space-y-3">
-                    <div className="w-12 h-12 bg-white border-2 border-slate-100 text-slate-400 rounded-xl flex items-center justify-center mx-auto shadow-sm">
-                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                 {isProcessing && processingState.type === 'pdf' ? (
+                    <div className="space-y-4">
+                       <div className="w-full h-2 bg-blue-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-600 transition-all duration-300 ease-out" style={{ width: `${processingState.progress}%` }}></div>
+                       </div>
+                       <p className="font-bold text-blue-600 uppercase text-xs tracking-widest">Scanning Document... {Math.round(processingState.progress)}%</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-black uppercase text-slate-700">Upload Lead Magnet PDF</p>
-                      <p className="text-slate-400 text-[10px] mt-1">AI will extract tonality & style</p>
-                    </div>
-                 </div>
+                 ) : (
+                     <div className="space-y-3">
+                        <div className={`w-12 h-12 ${pdfName ? 'bg-green-100 text-green-600' : 'bg-white text-slate-400'} border-2 border-slate-100 rounded-xl flex items-center justify-center mx-auto shadow-sm transition-colors`}>
+                           {pdfName ? (
+                               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                           ) : (
+                               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                           )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black uppercase text-slate-700">{pdfName ? 'Change Lead Magnet' : 'Upload Lead Magnet PDF'}</p>
+                          {pdfName ? (
+                              <p className="text-green-600 text-[10px] mt-1 font-bold truncate max-w-[200px] mx-auto">{pdfName}</p>
+                          ) : (
+                              <p className="text-slate-400 text-[10px] mt-1">AI extracts tonality & style</p>
+                          )}
+                        </div>
+                     </div>
+                 )}
               </div>
 
               {hasData && (
