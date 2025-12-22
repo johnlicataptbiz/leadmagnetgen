@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleAI } from "@google/genai";
 
 export default async function handler(req: any, res: any) {
   // CORS
@@ -17,7 +17,8 @@ export default async function handler(req: any, res: any) {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY missing on server.' });
 
   try {
-    const genAI = new GoogleGenAI(apiKey);
+    // Correct class name for @google/genai is GoogleAI
+    const genAI = new GoogleAI(apiKey);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash",
       systemInstruction: payload.systemInstruction 
@@ -42,8 +43,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const response = await result.response;
-    const text = response.text();
-    return res.status(200).json(JSON.parse(text));
+    return res.status(200).json(JSON.parse(response.text()));
 
   } catch (error: any) {
     console.error("Vercel AI Error:", error);
