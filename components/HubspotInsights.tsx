@@ -52,9 +52,9 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
         const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
         if (lines.length < 1) return reject('No data found');
 
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '')).slice(0, 20); // trim columns
         const rowCount = lines.length - 1;
-        const sampleLimit = Math.min(lines.length, 20); // reduced sample size to avoid AI timeouts
+        const sampleLimit = Math.min(lines.length, 10); // reduced sample size to avoid AI timeouts
         const sampleCsv = lines.slice(0, sampleLimit).join('\n');
 
         // Basic numeric stats for heuristic context
@@ -110,7 +110,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
     if (!e.target.files) return;
     setErrorMessage(null);
     
-    const selectedFiles = Array.from(e.target.files).slice(0, 10 - uploads.length) as File[];
+    const selectedFiles = Array.from(e.target.files).slice(0, 8 - uploads.length) as File[];
     
     // 1. Add them all as pending first
     const pendingFiles: UploadedFilePreview[] = selectedFiles.map(f => ({
@@ -234,8 +234,8 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, report,
               </div>
           </div>
           
-          <div className="w-full relative">
-             <ResponsiveContainer width="100%" aspect={1.8} debounce={50} minWidth={0}>
+          <div className="w-full relative h-[300px]">
+             <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
                 {chart.type === 'line' ? (
                   <LineChart data={dataPoints} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
