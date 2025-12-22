@@ -21,8 +21,8 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Construct Gemini API request - using gemini-1.5-flash-latest for free tier
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+    // Construct Gemini API request - using gemini-2.0-flash (stable free tier)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     
     const requestBody = {
       contents: action === 'multimodal' 
