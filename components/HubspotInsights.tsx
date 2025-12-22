@@ -118,6 +118,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
   const [topBySessions, setTopBySessions] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
   const [topByRate, setTopByRate] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [showExportHelp, setShowExportHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -261,6 +262,57 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-10 text-center">
             <h2 className="text-2xl font-black heading-font text-slate-900 mb-2 uppercase">Analyze & Pivot</h2>
             <p className="text-slate-500 mb-8 max-w-lg mx-auto">Upload your HubSpot export to see real KPI snapshots and top performers. Then optionally generate AI strategy ideas from that data.</p>
+
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => setShowExportHelp(v => !v)}
+                className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
+              >
+                {showExportHelp ? 'Hide HubSpot export steps' : 'Show HubSpot export steps'}
+              </button>
+              {showExportHelp && (
+                <div className="mt-4 text-left bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-6">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">This export should include</p>
+                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                      <li><span className="font-black">Label</span>: Page/URL/Title/Campaign (one of these).</li>
+                      <li><span className="font-black">Traffic</span>: Sessions (preferred) or Visits/Views/Pageviews.</li>
+                      <li><span className="font-black">Conversions</span> (optional): Submissions/Conversions/New contacts/Form submissions.</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Option A (recommended): Traffic Analytics → Pages</p>
+                    <ol className="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
+                      <li>HubSpot → <strong>Reports</strong> → <strong>Analytics Tools</strong> → <strong>Traffic Analytics</strong>.</li>
+                      <li>Set date range to <strong>Last 30 days</strong> (or <strong>Last 90 days</strong> if traffic is low).</li>
+                      <li>Open the <strong>Pages</strong> view (Top Pages / Page performance).</li>
+                      <li>Confirm the table shows <strong>Sessions</strong> (or Visits/Views/Pageviews).</li>
+                      <li>Click <strong>Export</strong> (top right) → <strong>CSV</strong>.</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Option B (best for Sessions + Conversions together): Custom Report</p>
+                    <ol className="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
+                      <li>HubSpot → <strong>Reports</strong> → <strong>Reports</strong> → <strong>Create report</strong> → <strong>Custom report builder</strong>.</li>
+                      <li>Dimension: <strong>Page URL</strong> or <strong>Page title</strong>.</li>
+                      <li>Metrics: <strong>Sessions</strong> + <strong>New contacts</strong> (or Submissions/Conversions).</li>
+                      <li>Apply date range (Last 30/90), run, then <strong>Export → CSV</strong>.</li>
+                    </ol>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-xl p-4">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-500">Troubleshooting</p>
+                    <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                      <li>If Sessions show <strong>0</strong>, you likely exported a <strong>Forms</strong>/<strong>Contacts</strong> report instead of a <strong>Pages</strong>/<strong>Traffic</strong> report.</li>
+                      <li>If “Top by Conversion Rate” is empty, you’re missing Sessions or Conversions, or each row has under 25 sessions.</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
             
             <div 
               onClick={() => fileInputRef.current?.click()}
