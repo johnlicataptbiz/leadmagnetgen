@@ -257,7 +257,7 @@ const App: React.FC = () => {
             ></div>
             <div className="text-center">
               <h2 className="text-2xl font-bold text-slate-900 heading-font">{loadingMessage}</h2>
-              <p className="text-slate-500 mt-2">Leveraging Brand Context & Gemini 2.0 Flash...</p>
+              <p className="text-slate-500 mt-2">Leveraging Brand Context & Gemini 3 Flash...</p>
             </div>
           </div>
         ) : (
