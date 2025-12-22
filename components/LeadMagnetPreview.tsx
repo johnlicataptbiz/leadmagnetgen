@@ -253,12 +253,15 @@ const LeadMagnetPreview: React.FC<LeadMagnetPreviewProps> = ({ content, brandCon
           </p>
           
           <div className="pt-8 relative z-10">
-            <button 
-              className="bg-white px-16 py-7 rounded-3xl text-2xl font-black heading-font uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300" 
+            <a 
+              href="https://meetings.hubspot.com/pt-biz/discovery-call-jack"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white px-16 py-7 rounded-3xl text-2xl font-black heading-font uppercase shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 inline-block no-underline" 
               style={{ color: colors.secondary }}
             >
               Secure My Session
-            </button>
+            </a>
           </div>
         </section>
 

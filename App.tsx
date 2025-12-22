@@ -6,7 +6,7 @@ import Header from './components/Header';
 import TopicForm from './components/TopicForm';
 import SuggestionList from './components/SuggestionList';
 import LeadMagnetPreview from './components/LeadMagnetPreview';
-// import HubspotInsights from './components/HubspotInsights';
+import HubspotInsights from './components/HubspotInsights';
 import BrandIntelligence from './components/BrandIntelligence';
 import MemoryBank from './components/MemoryBank';
 
@@ -171,25 +171,30 @@ const App: React.FC = () => {
   const handleExportPDF = async () => {
     const element = document.getElementById('preview-doc');
     // @ts-ignore
-    if (!element || !window.html2pdf) {
-      alert("PDF generation library not loaded or content missing. Please try again.");
+    if (!window.html2pdf) {
+      alert("PDF generation library not loaded. Please refresh the page.");
+      return;
+    }
+    if (!element) {
+      alert("Preview content not found. Please try regenerating.");
       return;
     }
     
     setIsExporting(true);
     
-    // Small delay to ensure render
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Allow UI to update before heavy sync work
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     const opt = {
-      margin: [0.2, 0, 0.2, 0], // Top, Right, Bottom, Left margins (in inches)
-      filename: `${content?.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'pt-biz-lead-magnet'}-${new Date().toISOString().split('T')[0]}.pdf`,
+      margin: [0.3, 0.4, 0.3, 0.4], 
+      filename: `${content?.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'pt-biz-lead-magnet'}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         useCORS: true, 
         letterRendering: true,
         scrollY: 0,
+        ignoreElements: (element: Element) => element.classList.contains('no-print')
       },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -198,13 +203,52 @@ const App: React.FC = () => {
     try {
       // @ts-ignore
       await window.html2pdf().set(opt).from(element).save();
-    } catch (err) {
+    } catch (err: any) {
       console.error("PDF Export failed:", err);
-      // @ts-ignore
-      setErrorMessage("Failed to generate PDF. check console for details.");
+      setErrorMessage("Failed to generate PDF. Please try again or use the new 'Copy HTML' feature.");
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleExportHTML = () => {
+    const element = document.getElementById('preview-doc');
+    if (!element) return;
+    
+    // Clone to clean up for export
+    const clone = element.cloneNode(true) as HTMLElement;
+    
+    // Inline key styles for email/web portability if needed (basic)
+    // For now, we just grab outerHTML, but we could add a wrapper.
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${content?.title || 'Lead Magnet'}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Essential resets */
+    body { margin: 0; padding: 0; font-family: sans-serif; }
+    img { max-width: 100%; height: auto; }
+    .heading-font { font-family: 'Inter', sans-serif; font-weight: 900; }
+  </style>
+  <!-- Tailwind CDN for decent portable rendering if hosted -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-4xl mx-auto my-10">
+    ${clone.innerHTML}
+  </div>
+</body>
+</html>`;
+
+    navigator.clipboard.writeText(htmlContent).then(() => {
+      alert("HTML Code copied to clipboard! You can now paste this into your CMS or email tool.");
+    }).catch(err => {
+      console.error("Failed to copy HTML", err);
+      // Fallback
+      setErrorMessage("Could not copy to clipboard. Check console.");
+    });
   };
 
   const reset = () => {
@@ -356,18 +400,11 @@ const App: React.FC = () => {
 
             {step === 'insights' && (
               <div className="animate-fade-in">
-                <div className="mb-8 flex items-center justify-between">
-                  <h2 className="text-3xl font-black text-slate-900 heading-font uppercase">Market Insights</h2>
-                  <button onClick={() => setStep('input')} className="font-bold uppercase text-xs" style={{ color: brandContext.colors.secondary }}>← Back</button>
-                </div>
-                <div className="text-center p-12 text-slate-500">
-                  <p>Market Insights are currently undergoing maintenance.</p>
-                  {/* <HubspotInsights 
-                    brandContext={brandContext}
-                    report={marketReport}
-                    onReportChange={setMarketReport}
-                  /> */}
-                </div>
+                <HubspotInsights 
+                  brandContext={brandContext}
+                  report={marketReport}
+                  onReportChange={setMarketReport}
+                />
               </div>
             )}
 
@@ -406,6 +443,13 @@ const App: React.FC = () => {
                       disabled={isExporting}
                     >
                       {isExporting ? 'Exporting...' : 'Download Branded PDF'}
+                    </button>
+                    <button 
+                      onClick={handleExportHTML}
+                      className="px-6 py-2 border-2 text-slate-700 font-bold heading-font uppercase text-xs hover:bg-slate-50 transition-colors"
+                      style={{ borderColor: brandContext.colors.secondary, color: brandContext.colors.secondary }}
+                    >
+                      &lt;/&gt; Copy HTML
                     </button>
                   </div>
                 </div>
