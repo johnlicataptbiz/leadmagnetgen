@@ -302,6 +302,15 @@ Be concise.`,
                  <img src="/pt-biz-logo.png" className="h-8" alt="PT Biz" />
                  <h2 className="text-2xl font-black uppercase tracking-tight">Brand Setup</h2>
               </div>
+
+              {hasData && (
+                <button 
+                  onClick={onClose}
+                  className="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-xs hover:bg-blue-600 transition-colors shadow-lg"
+                >
+                  Save & Continue
+                </button>
+              )}
               
               {/* Logo Upload UI */}
               <div 
@@ -379,7 +388,7 @@ Be concise.`,
                   {context.referenceDocNames.length > 0 && (
                     <>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Loaded Assets:</p>
-                      <div className="space-y-2 mb-6">
+                      <div className="space-y-2">
                         {context.referenceDocNames.map((n, i) => (
                           <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -389,12 +398,6 @@ Be concise.`,
                       </div>
                     </>
                   )}
-                  <button 
-                    onClick={onClose}
-                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-xs hover:bg-blue-600 transition-colors shadow-lg"
-                  >
-                    Save & Continue
-                  </button>
                 </div>
               )}
             </div>
