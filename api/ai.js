@@ -1,33 +1,40 @@
-
-const { GoogleGenerativeAI } = require("@google/genai");
-
 module.exports = async (req, res) => {
-  // CORS
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // STEP 1: Verify function entry
   if (req.method === 'GET') {
-    return res.status(200).json({ status: 'Proxy Online', driver: 'CJS' });
-  }
-
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
-  const { action, payload } = req.body;
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY not configured on Vercel.' });
+    return res.status(200).json({ 
+      status: 'Function Reached',
+      node_version: process.version,
+      env_key_exists: !!process.env.GEMINI_API_KEY
+    });
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
+    // STEP 2: Test SDK import
+    const { GoogleGenerativeAI } = require("@google/genai");
+    
+    if (!GoogleGenerativeAI) {
+      return res.status(500).json({ error: 'SDK import failed: GoogleGenerativeAI is undefined' });
+    }
+
+    // STEP 3: Test SDK initialization
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    if (!genAI) {
+      return res.status(500).json({ error: 'SDK initialization failed' });
+    }
+
+    // STEP 4: Process request
+    const { action, payload } = req.body;
+    
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash",
-      systemInstruction: payload.systemInstruction || "You are PT Biz AI assistant."
+      systemInstruction: payload.systemInstruction 
     });
 
     const generationConfig = {
@@ -42,9 +49,8 @@ module.exports = async (req, res) => {
         generationConfig
       });
     } else {
-      const prompt = payload.prompt || (payload.parts?.[0]?.text) || "Identify yourself.";
       result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [{ text: payload.prompt }] }],
         generationConfig
       });
     }
@@ -53,10 +59,10 @@ module.exports = async (req, res) => {
     return res.status(200).json(JSON.parse(response.text()));
 
   } catch (error) {
-    console.error("Gemini Error:", error);
     return res.status(500).json({ 
-      error: error.message || "AI processing failed.",
-      trace: error.toString()
+      error: error.message,
+      stack: error.stack,
+      type: error.constructor.name
     });
   }
 };
