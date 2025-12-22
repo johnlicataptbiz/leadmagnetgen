@@ -23,7 +23,7 @@ ${cautions || "- (none)"}`;
  * This avoids bundling the Google SDK in the frontend, which triggers browser security warnings
  * and makes the application more robust.
  */
-const callAIProxy = async (action: 'text' | 'multimodal' | 'image', payload: any) => {
+const callAIProxy = async (action: 'text' | 'multimodal' | 'image' | 'analyze', payload: any) => {
   const response = await fetch('/api/ai', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -390,7 +390,8 @@ ${brandPrompt}
   };
 
   try {
-    return await callAIProxy("text", payload);
+    // Use 'analyze' action to trigger Gemini 1.5 Pro on the backend
+    return await callAIProxy("analyze", payload);
   } catch (e) {
     console.error("Failed to generate smart market report", e);
     const message = e instanceof Error ? e.message : "Failed to generate smart market report";

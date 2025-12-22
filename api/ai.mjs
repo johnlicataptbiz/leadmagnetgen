@@ -21,9 +21,11 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Select model based on production-stable Gemini 1.5
-    // Gemini 1.5 Flash is the current reliable standard for this implementation
-    const modelName = action === 'image' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+    // Select model:
+    // - 'image' -> Gemini 1.5 Pro (Multimodal)
+    // - 'analyze' -> Gemini 1.5 Pro (Deep Reasoning for CSVs)
+    // - 'text' -> Gemini 1.5 Flash (Fast generation)
+    const modelName = (action === 'image' || action === 'analyze') ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
     const requestBody = {
