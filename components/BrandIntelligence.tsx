@@ -68,6 +68,45 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
     });
   };
 
+  const analyzePDF = async (file: File): Promise<{tonality: string, styling: string, styleNotes: string}> => {
+    const reader = new FileReader();
+    return new Promise((resolve, reject) => {
+      reader.onload = async () => {
+        try {
+          const text = reader.result as string;
+          const sample = text.substring(0, 10000);
+          
+          const response = await fetch('/api/ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'text',
+              payload: {
+                prompt: `Analyze this lead magnet and extract brand voice:\n\n${sample}`,
+                systemInstruction: `Extract: 1) Tonality (voice/tone), 2) Styling (formatting patterns), 3) Style Notes (unique characteristics). Be concise.`,
+                responseSchema: {
+                  type: 'object',
+                  properties: {
+                    tonality: { type: 'string' },
+                    styling: { type: 'string' },
+                    styleNotes: { type: 'string' }
+                  }
+                }
+              }
+            })
+          });
+
+          if (!response.ok) throw new Error('AI analysis failed');
+          const result = await response.json();
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  };
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -90,7 +129,18 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
         };
         reader.readAsDataURL(file);
       } else {
-        // PDF or Text: Just record the file name (no AI analysis)
+        // PDF: Analyze with Gemini
+      } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        const analysis = await analyzePDF(file);
+        onChange({
+          ...context,
+          tonality: analysis.tonality,
+          styling: analysis.styling,
+          styleNotes: analysis.styleNotes,
+          referenceDocNames: [...context.referenceDocNames, `Lead Magnet: ${file.name}`]
+        });
+        setIsProcessing(false);
+      } else {
         onChange({
           ...context,
           referenceDocNames: [...context.referenceDocNames, `Doc: ${file.name}`]
