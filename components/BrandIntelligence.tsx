@@ -13,6 +13,7 @@ interface BrandIntelligenceProps {
 const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange, onClose }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // Derived state: Is there any data?
   const hasData = context.referenceDocNames.length > 0 || context.logoUrl;
@@ -172,8 +173,18 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
         ref={fileInputRef} 
         className="hidden" 
         onChange={handleFile}
-        accept="image/*,.pdf,.txt,.doc,.docx"
-        aria-label="Upload brand asset"
+        accept="image/*"
+        aria-label="Upload brand logo"
+      />
+      <input 
+        id="pdf-upload"
+        name="pdf-upload"
+        type="file" 
+        ref={pdfInputRef} 
+        className="hidden" 
+        onChange={handleFile}
+        accept=".pdf"
+        aria-label="Upload lead magnet PDF"
       />
       
       <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -210,6 +221,22 @@ const BrandIntelligence: React.FC<BrandIntelligenceProps> = ({ context, onChange
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* PDF / Lead Magnet Upload */}
+              <div 
+                onClick={() => !isProcessing && pdfInputRef.current?.click()}
+                className={`border-4 border-dashed rounded-[2rem] p-8 text-center cursor-pointer transition-all ${isProcessing ? 'border-blue-500 bg-blue-50 opacity-50' : 'border-slate-100 hover:border-blue-200 hover:bg-slate-50'}`}
+              >
+                 <div className="space-y-3">
+                    <div className="w-12 h-12 bg-white border-2 border-slate-100 text-slate-400 rounded-xl flex items-center justify-center mx-auto shadow-sm">
+                       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-black uppercase text-slate-700">Upload Lead Magnet PDF</p>
+                      <p className="text-slate-400 text-[10px] mt-1">AI will extract tonality & style</p>
+                    </div>
+                 </div>
               </div>
 
               {hasData && (
