@@ -108,6 +108,8 @@ const BarRow: React.FC<{ label: string; value: number; max: number; colorClass: 
 };
 
 const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysis: initialAnalysis, onAnalysisComplete, onSelectIdea }) => {
+  const breezePrompt =
+    'Create HubSpot AI report: Pages performance last 30 days. Columns: Page URL (or Page title), Sessions (or Visits), Conversions (New contacts or Form submissions). Include all rows. Export as CSV.';
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<HubspotAnalysis | null>(initialAnalysis || null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -119,6 +121,7 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
   const [topByRate, setTopByRate] = useState<Array<{ label: string; sessions: number; conversions: number; rate: number }>>([]);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [showExportHelp, setShowExportHelp] = useState(false);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -203,6 +206,16 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
       setErrorMessage(e.message || 'Failed to generate AI insights.');
     } finally {
       setIsGeneratingAI(false);
+    }
+  };
+
+  const copyBreezePrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(breezePrompt);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setErrorMessage('Copy failed. Please select the prompt and copy manually.');
     }
   };
 
@@ -296,11 +309,26 @@ const HubspotInsights: React.FC<HubspotInsightsProps> = ({ brandContext, analysi
                   <div>
                     <p className="text-xs font-black uppercase tracking-widest text-slate-500">Option B (best for Sessions + Conversions together): Custom Report</p>
                     <ol className="mt-3 space-y-2 text-sm text-slate-700 list-decimal list-inside">
-                      <li>HubSpot → <strong>Reports</strong> → <strong>Reports</strong> → <strong>Create report</strong> → <strong>Custom report builder</strong>.</li>
-                      <li>Dimension: <strong>Page URL</strong> or <strong>Page title</strong>.</li>
-                      <li>Metrics: <strong>Sessions</strong> + <strong>New contacts</strong> (or Submissions/Conversions).</li>
-                      <li>Apply date range (Last 30/90), run, then <strong>Export → CSV</strong>.</li>
+                      <li>HubSpot → <strong>Reports</strong> → <strong>Create report</strong>.</li>
+                      <li>Select <strong>AI-generated report</strong> (Breeze AI).</li>
+                      <li>Copy/paste the prompt below (≤ 250 chars) and click <strong>Generate report</strong>.</li>
+                      <li>Set the date range if needed (Last 30/90 days), then <strong>Export → CSV</strong>.</li>
                     </ol>
+                    <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Breeze prompt (≤ 250 chars)</p>
+                        <button
+                          type="button"
+                          onClick={copyBreezePrompt}
+                          className="text-xs font-black uppercase tracking-widest text-blue-600 hover:underline"
+                        >
+                          {copied ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <p className="mt-3 font-mono text-[12px] text-slate-700 whitespace-pre-wrap break-words">
+                        {breezePrompt}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="bg-white border border-slate-200 rounded-xl p-4">
