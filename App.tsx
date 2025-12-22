@@ -218,9 +218,39 @@ const App: React.FC = () => {
                   <h1 className="text-5xl font-black text-slate-900 mb-4 heading-font tracking-tight uppercase">
                     Brand Intelligence Studio
                   </h1>
-                  <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                  <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
                     Centralized platform for creating and storing high-converting PT practice assets.
                   </p>
+                  
+                  {/* Brand Status Indicator */}
+                  {brandContext.referenceDocNames.length > 0 && (
+                    <div className="inline-block bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-2xl mx-auto">
+                      <div className="flex items-center justify-center gap-6">
+                        {brandContext.logoUrl && (
+                          <img src={brandContext.logoUrl} className="h-12 object-contain" alt="Brand Logo" />
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-2">
+                            {(['primary', 'secondary', 'accent'] as const).map((colorKey) => (
+                              <div 
+                                key={colorKey}
+                                className="w-8 h-8 rounded-lg border-2 border-white shadow-lg"
+                                style={{ backgroundColor: brandContext.colors[colorKey] }}
+                                title={`${colorKey}: ${brandContext.colors[colorKey]}`}
+                              />
+                            ))}
+                          </div>
+                          <div className="border-l-2 border-slate-200 pl-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                              <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Brand DNA Active</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-1">{brandContext.referenceDocNames.length} source{brandContext.referenceDocNames.length !== 1 ? 's' : ''} loaded</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
