@@ -100,7 +100,8 @@ export const analyzeStyleReference = async (rawContent: string, fileName: string
   };
 
   try {
-    return await callAIProxy(action, payload);
+    // Use 'analyze' action for deep reasoning in Gemini 3 Pro
+    return await callAIProxy('analyze', { ...payload, precision: 'high' });
   } catch (e) {
     console.error("AI Analysis Failed", e);
     throw e;
@@ -255,7 +256,8 @@ export const analyzeHubspotData = async (rawContent: string, brandContext?: Bran
   };
 
   try {
-    return await callAIProxy('text', payload);
+    // Use 'analyze' action for deep reasoning in Gemini 3 Pro
+    return await callAIProxy('analyze', { ...payload, precision: 'high' });
   } catch (e) {
     console.error("Failed to analyze HubSpot data", e);
     const message = e instanceof Error ? e.message : "Failed to analyze HubSpot data";
@@ -390,8 +392,8 @@ ${brandPrompt}
   };
 
   try {
-    // Use 'analyze' action to trigger Gemini 1.5 Pro on the backend
-    return await callAIProxy("analyze", payload);
+    // Use 'analyze' action for high reasoning in Gemini 3 Pro
+    return await callAIProxy("analyze", { ...payload, precision: 'high' });
   } catch (e) {
     console.error("Failed to generate smart market report", e);
     const message = e instanceof Error ? e.message : "Failed to generate smart market report";

@@ -21,11 +21,14 @@ export default async function handler(req, res) {
 
     const { action, payload } = req.body;
     
-    // Select model:
-    // - 'image' -> Gemini 1.5 Pro (Multimodal)
-    // - 'analyze' -> Gemini 1.5 Pro (Deep Reasoning for CSVs)
-    // - 'text' -> Gemini 1.5 Flash (Fast generation)
-    const modelName = (action === 'image' || action === 'analyze') ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+    // Select model based on 2025 Gemini 3 Specifications
+    // Identifiers: gemini-3-pro-preview, gemini-3-flash-preview, gemini-3-pro-image-preview (Nano Banana Pro)
+    const modelName = action === 'image' 
+        ? 'gemini-3-pro-image-preview' 
+        : action === 'analyze' 
+            ? 'gemini-3-pro-preview' 
+            : 'gemini-3-flash-preview';
+            
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     
     const requestBody = {
@@ -35,7 +38,11 @@ export default async function handler(req, res) {
       generationConfig: {
         response_mime_type: action === 'image' ? "text/plain" : "application/json",
         response_schema: action === 'image' ? undefined : payload.responseSchema,
-        // Reverting to standard generation config for immediate stability
+        // Gemini 3 Thinking Level: 'high' for deep reasoning, 'low'/'minimal' for speed
+        thinking_level: payload.precision === 'high' ? 'high' : (payload.precision === 'low' ? 'low' : undefined),
+        // Support for thoughtSignature reasoning continuity
+        thoughtSignature: payload.thoughtSignature || undefined,
+        temperature: 1.0, // Optimized for Gemini 3 reasoning
       }
     };
 
